@@ -1,0 +1,30 @@
+{
+    "name": "nwidart/diagnostics",
+    "description": "",
+    "authors": [
+        {
+            "name": "Nicolas Widart",
+            "email": "n.widart@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Diagnostics\\": "app/",
+            "Modules\\Diagnostics\\Database\\Factories\\": "database/factories/",
+            "Modules\\Diagnostics\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Diagnostics\\Tests\\": "tests/"
+        }
+    }
+}
