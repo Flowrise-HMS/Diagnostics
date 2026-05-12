@@ -3,6 +3,8 @@
 namespace Modules\Diagnostics\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Modules\Core\Database\Seeders\CoreDatabaseSeeder;
+use Modules\Core\Models\Service;
 use Modules\Diagnostics\Database\Seeders\DiagnosticsDatabaseSeeder;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
 use Modules\Diagnostics\Models\DiagnosticMedia;
@@ -96,13 +98,83 @@ class DiagnosticSupportInfrastructureTest extends TestCase
         ]);
 
         $this->assertDatabaseHas('permissions', [
+            'name' => 'ViewAny DiagnosticFulfillment',
+            'guard_name' => 'web',
+        ]);
+
+        $this->assertDatabaseHas('permissions', [
+            'name' => 'ViewAny DiagnosticServiceProfile',
+            'guard_name' => 'web',
+        ]);
+
+        $this->assertDatabaseHas('permissions', [
+            'name' => 'ViewAny DiagnosticResultTemplate',
+            'guard_name' => 'web',
+        ]);
+
+        $this->assertDatabaseHas('permissions', [
+            'name' => 'View DiagnosticsCluster',
+            'guard_name' => 'web',
+        ]);
+
+        $this->assertDatabaseHas('permissions', [
             'name' => 'sign_diagnostic_report',
-            'guard_name' => 'api',
+            'guard_name' => 'web',
         ]);
 
         $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('collect_diagnostic_specimen'));
+        $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('ViewAny DiagnosticFulfillment'));
         $this->assertTrue(Role::findByName('radiology_technician', 'web')->hasPermissionTo('upload_diagnostic_result_file'));
         $this->assertTrue(Role::findByName('pathologist', 'web')->hasPermissionTo('sign_diagnostic_report'));
         $this->assertTrue(Role::findByName('radiologist', 'web')->hasPermissionTo('verify_diagnostic_result'));
+    }
+
+    public function test_diagnostics_database_seeder_adds_small_clinic_starter_catalog_without_duplicating_existing_services(): void
+    {
+        $this->seed(CoreDatabaseSeeder::class);
+
+        $existingFbc = Service::query()->where('name', 'Full Blood Count (FBC)')->firstOrFail();
+        $existingFbcPrice = $existingFbc->price;
+
+        $this->seed(DiagnosticsDatabaseSeeder::class);
+        $this->seed(DiagnosticsDatabaseSeeder::class);
+
+        $this->assertDatabaseHas('service_categories', [
+            'code' => 'PAT',
+            'name' => 'Pathology',
+        ]);
+
+        $this->assertSame(1, Service::query()->where('name', 'Full Blood Count (FBC)')->count());
+        $this->assertSame(1, Service::query()->where('name', 'Histopathology')->count());
+        $this->assertSame(1, Service::query()->where('name', 'Pelvic Ultrasound')->count());
+
+        $fbcService = Service::query()->where('name', 'Full Blood Count (FBC)')->firstOrFail();
+        $this->assertSame((string) $existingFbc->id, (string) $fbcService->id);
+        $this->assertSame($existingFbcPrice, $fbcService->price);
+
+        $fbcProfile = DiagnosticServiceProfile::query()
+            ->where('service_id', $fbcService->id)
+            ->first();
+
+        $this->assertNotNull($fbcProfile);
+        $this->assertSame('lab', $fbcProfile->discipline);
+        $this->assertNotNull($fbcProfile->defaultTemplate);
+        $this->assertSame(4, $fbcProfile->defaultTemplate->fields()->count());
+        $this->assertTrue($fbcProfile->defaultTemplate->fields->pluck('label')->contains('Hemoglobin'));
+
+        $histopathologyProfile = DiagnosticServiceProfile::query()
+            ->whereHas('service', fn ($query) => $query->where('name', 'Histopathology'))
+            ->first();
+
+        $this->assertNotNull($histopathologyProfile);
+        $this->assertSame('pathology', $histopathologyProfile->discipline);
+        $this->assertNotNull($histopathologyProfile->defaultTemplate);
+
+        $pelvicUltrasoundProfile = DiagnosticServiceProfile::query()
+            ->whereHas('service', fn ($query) => $query->where('name', 'Pelvic Ultrasound'))
+            ->first();
+
+        $this->assertNotNull($pelvicUltrasoundProfile);
+        $this->assertSame('radiology', $pelvicUltrasoundProfile->discipline);
     }
 }

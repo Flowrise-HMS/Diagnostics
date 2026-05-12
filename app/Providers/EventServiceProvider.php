@@ -3,6 +3,10 @@
 namespace Modules\Diagnostics\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Modules\Clinical\Events\RequestItemCancelled;
+use Modules\Clinical\Events\RequestItemCreated;
+use Modules\Diagnostics\Listeners\CancelDiagnosticFulfillmentFromRequestItem;
+use Modules\Diagnostics\Listeners\CreateDiagnosticFulfillmentFromRequestItem;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -11,7 +15,14 @@ class EventServiceProvider extends ServiceProvider
      *
      * @var array<string, array<int, string>>
      */
-    protected $listen = [];
+    protected $listen = [
+        RequestItemCreated::class => [
+            CreateDiagnosticFulfillmentFromRequestItem::class,
+        ],
+        RequestItemCancelled::class => [
+            CancelDiagnosticFulfillmentFromRequestItem::class,
+        ],
+    ];
 
     /**
      * Indicates if events should be discovered.

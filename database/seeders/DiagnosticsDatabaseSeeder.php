@@ -9,7 +9,9 @@ class DiagnosticsDatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            DiagnosticsShieldPermissionsSeeder::class,
             DiagnosticsCustomPermissionSeeder::class,
+            DiagnosticStarterCatalogSeeder::class,
         ]);
     }
 }

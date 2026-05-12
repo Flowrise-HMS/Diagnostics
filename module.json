@@ -1,8 +1,18 @@
 {
     "name": "Diagnostics",
     "alias": "diagnostics",
-    "description": "",
-    "keywords": [],
+    "description": "Unified diagnostics module for laboratory, radiology, and pathology workflows with fulfillment tracking, templates, reports, starter seed data, and Clinical workflow integration.",
+    "keywords": [
+        "flowrise",
+        "hms",
+        "diagnostics",
+        "laboratory",
+        "radiology",
+        "pathology",
+        "service-request",
+        "fhir",
+        "loinc"
+    ],
     "priority": 0,
     "providers": [
         "Modules\\Diagnostics\\Providers\\DiagnosticsServiceProvider"

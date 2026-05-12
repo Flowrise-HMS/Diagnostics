@@ -66,12 +66,10 @@ class DiagnosticsCustomPermissionSeeder extends Seeder
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         foreach (array_keys($this->matrix) as $name) {
-            foreach (['web', 'api'] as $guard) {
                 Permission::firstOrCreate([
                     'name' => $name,
-                    'guard_name' => $guard,
+                    'guard_name' => 'web',
                 ]);
-            }
         }
 
         foreach ($this->matrix as $permissionName => $roles) {
