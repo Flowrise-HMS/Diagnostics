@@ -16,7 +16,6 @@ use Modules\Diagnostics\Models\DiagnosticResultTemplateField;
 use Modules\Diagnostics\Models\DiagnosticServiceProfile;
 use Modules\Diagnostics\Models\DiagnosticSpecimen;
 use Modules\Diagnostics\Models\DiagnosticStudy;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 

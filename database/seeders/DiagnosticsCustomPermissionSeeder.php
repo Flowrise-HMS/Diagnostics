@@ -14,7 +14,7 @@ class DiagnosticsCustomPermissionSeeder extends Seeder
         'assign_diagnostic_fulfillment' => [
             'super_admin',
             'laboratory_technician',
-            'laboratory_scientist',
+            'laboratory_technician',
             'radiology_technician',
             'radiologist',
             'pathologist',
@@ -22,13 +22,13 @@ class DiagnosticsCustomPermissionSeeder extends Seeder
         'collect_diagnostic_specimen' => [
             'super_admin',
             'laboratory_technician',
-            'laboratory_scientist',
+            'laboratory_technician',
             'pathologist',
         ],
         'upload_diagnostic_result_file' => [
             'super_admin',
             'laboratory_technician',
-            'laboratory_scientist',
+            'laboratory_technician',
             'radiology_technician',
             'radiologist',
             'pathologist',
@@ -36,26 +36,26 @@ class DiagnosticsCustomPermissionSeeder extends Seeder
         'finalize_diagnostic_result' => [
             'super_admin',
             'laboratory_technician',
-            'laboratory_scientist',
+            'laboratory_technician',
             'radiology_technician',
             'radiologist',
             'pathologist',
         ],
         'verify_diagnostic_result' => [
             'super_admin',
-            'laboratory_scientist',
+            'laboratory_technician',
             'radiologist',
             'pathologist',
         ],
         'sign_diagnostic_report' => [
             'super_admin',
-            'laboratory_scientist',
+            'laboratory_technician',
             'radiologist',
             'pathologist',
         ],
         'amend_diagnostic_report' => [
             'super_admin',
-            'laboratory_scientist',
+            'laboratory_technician',
             'radiologist',
             'pathologist',
         ],
@@ -64,13 +64,6 @@ class DiagnosticsCustomPermissionSeeder extends Seeder
     public function run(): void
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-        foreach (array_keys($this->matrix) as $name) {
-                Permission::firstOrCreate([
-                    'name' => $name,
-                    'guard_name' => 'web',
-                ]);
-        }
 
         foreach ($this->matrix as $permissionName => $roles) {
             $permission = Permission::query()

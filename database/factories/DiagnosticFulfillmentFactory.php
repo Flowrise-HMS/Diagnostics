@@ -3,7 +3,6 @@
 namespace Modules\Diagnostics\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Modules\Clinical\Database\Factories\RequestItemFactory;
 use Modules\Clinical\Models\RequestItem;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
 

@@ -2,6 +2,7 @@
 
 namespace Modules\Diagnostics\Tests\Feature;
 
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
 use Modules\Diagnostics\Models\DiagnosticMedia;
@@ -27,7 +28,7 @@ class DiagnosticSchemaRelationshipTest extends TestCase
     {
         $fulfillment = DiagnosticFulfillment::factory()->create();
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         DiagnosticFulfillment::factory()->create([
             'request_item_id' => $fulfillment->request_item_id,

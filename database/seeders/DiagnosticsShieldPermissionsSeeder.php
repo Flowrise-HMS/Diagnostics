@@ -51,21 +51,8 @@ class DiagnosticsShieldPermissionsSeeder extends Seeder
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        foreach ($this->resourcePermissions as $permissionName) {
-            Permission::firstOrCreate([
-                'name' => $permissionName,
-                'guard_name' => 'web',
-            ]);
-        }
-
         $this->giveNamedPermissionsToRole('super_admin', $this->resourcePermissions);
         $this->giveNamedPermissionsToRole('laboratory_technician', [
-            'View DiagnosticsCluster',
-            'ViewAny DiagnosticFulfillment',
-            'View DiagnosticFulfillment',
-            'Update DiagnosticFulfillment',
-        ]);
-        $this->giveNamedPermissionsToRole('laboratory_scientist', [
             'View DiagnosticsCluster',
             'ViewAny DiagnosticFulfillment',
             'View DiagnosticFulfillment',
