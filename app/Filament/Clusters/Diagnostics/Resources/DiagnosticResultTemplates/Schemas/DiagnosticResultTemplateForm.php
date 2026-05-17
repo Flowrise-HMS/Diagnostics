@@ -59,11 +59,16 @@ class DiagnosticResultTemplateForm
                                         'text' => 'Text',
                                         'select' => 'Select',
                                     ])
-                                    ->required(),
+                                    ->required()
+                                    ->live(),
                                 TextInput::make('sort_order')
                                     ->numeric()
                                     ->default(0)
                                     ->required(),
+                                TextInput::make('options')
+                                    ->label('Select Options (comma-separated)')
+                                    ->visible(fn ($get) => $get('value_type') === 'select')
+                                    ->placeholder('Option 1, Option 2, Option 3'),
                             ])
                             ->columns(2)
                             ->defaultItems(0),

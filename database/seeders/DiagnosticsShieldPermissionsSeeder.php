@@ -62,58 +62,6 @@ class DiagnosticsShieldPermissionsSeeder extends Seeder
             'ViewAny DiagnosticResultTemplate',
             'View DiagnosticResultTemplate',
         ]);
-        $this->giveNamedPermissionsToRole('radiology_technician', [
-            'View DiagnosticsCluster',
-            'ViewAny DiagnosticFulfillment',
-            'View DiagnosticFulfillment',
-            'Update DiagnosticFulfillment',
-        ]);
-        $this->giveNamedPermissionsToRole('radiologist', [
-            'View DiagnosticsCluster',
-            'ViewAny DiagnosticFulfillment',
-            'View DiagnosticFulfillment',
-            'Update DiagnosticFulfillment',
-            'ViewAny DiagnosticServiceProfile',
-            'View DiagnosticServiceProfile',
-            'ViewAny DiagnosticResultTemplate',
-            'View DiagnosticResultTemplate',
-        ]);
-        $this->giveNamedPermissionsToRole('pathologist', [
-            'View DiagnosticsCluster',
-            'ViewAny DiagnosticFulfillment',
-            'View DiagnosticFulfillment',
-            'Update DiagnosticFulfillment',
-            'ViewAny DiagnosticServiceProfile',
-            'View DiagnosticServiceProfile',
-            'ViewAny DiagnosticResultTemplate',
-            'View DiagnosticResultTemplate',
-        ]);
-        $this->giveNamedPermissionsToRole('system_admin', [
-            'View DiagnosticsCluster',
-            'ViewAny DiagnosticServiceProfile',
-            'View DiagnosticServiceProfile',
-            'Create DiagnosticServiceProfile',
-            'Update DiagnosticServiceProfile',
-            'Delete DiagnosticServiceProfile',
-            'ViewAny DiagnosticResultTemplate',
-            'View DiagnosticResultTemplate',
-            'Create DiagnosticResultTemplate',
-            'Update DiagnosticResultTemplate',
-            'Delete DiagnosticResultTemplate',
-        ]);
-        $this->giveNamedPermissionsToRole('facility_admin', [
-            'View DiagnosticsCluster',
-            'ViewAny DiagnosticServiceProfile',
-            'View DiagnosticServiceProfile',
-            'Create DiagnosticServiceProfile',
-            'Update DiagnosticServiceProfile',
-            'Delete DiagnosticServiceProfile',
-            'ViewAny DiagnosticResultTemplate',
-            'View DiagnosticResultTemplate',
-            'Create DiagnosticResultTemplate',
-            'Update DiagnosticResultTemplate',
-            'Delete DiagnosticResultTemplate',
-        ]);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

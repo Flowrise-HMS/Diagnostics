@@ -2,6 +2,7 @@
 
 namespace Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticResultTemplates\Tables;
 
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -53,6 +54,7 @@ class DiagnosticResultTemplatesTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                DeleteAction::make(),
             ])
             ->toolbarActions([
                 DeleteBulkAction::make(),

@@ -2,6 +2,7 @@
 
 namespace Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Tables;
 
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -52,6 +53,7 @@ class DiagnosticServiceProfilesTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                DeleteAction::make(),
             ])
             ->toolbarActions([
                 DeleteBulkAction::make(),

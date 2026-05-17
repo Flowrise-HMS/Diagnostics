@@ -20,11 +20,13 @@ class DiagnosticResultTemplateField extends Model
         'field_key',
         'label',
         'value_type',
+        'options',
         'sort_order',
     ];
 
     protected $casts = [
         'sort_order' => 'integer',
+        'options' => 'array',
     ];
 
     protected static function newFactory(): DiagnosticResultTemplateFieldFactory

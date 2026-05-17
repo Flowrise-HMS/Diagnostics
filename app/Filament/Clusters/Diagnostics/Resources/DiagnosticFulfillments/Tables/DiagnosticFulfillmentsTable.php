@@ -4,6 +4,7 @@ namespace Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\Diagnostic
 
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
@@ -84,7 +85,7 @@ class DiagnosticFulfillmentsTable
                         ->icon('heroicon-o-beaker')
                         ->color('warning')
                         ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('collect_diagnostic_specimen') && in_array($record->status, [FulfillmentStatus::PENDING, FulfillmentStatus::SCHEDULED], true))
-                        ->form([
+                        ->schema([
                             Select::make('specimen_type')
                                 ->options([
                                     'blood' => 'Blood',
@@ -121,7 +122,7 @@ class DiagnosticFulfillmentsTable
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('finalize_diagnostic_result'))
-                        ->form([
+                        ->schema([
                             Select::make('report_status')
                                 ->options([
                                     'preliminary' => 'Preliminary',
@@ -157,7 +158,7 @@ class DiagnosticFulfillmentsTable
                         ->icon('heroicon-o-pencil-square')
                         ->color('gray')
                         ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('sign_diagnostic_report') && $record->latestReportVersion !== null)
-                        ->form([
+                        ->schema([
                             Select::make('role')
                                 ->options([
                                     'reviewer' => 'Reviewer',
@@ -194,6 +195,7 @@ class DiagnosticFulfillmentsTable
                         }),
                     ViewAction::make(),
                     EditAction::make(),
+                    DeleteAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
