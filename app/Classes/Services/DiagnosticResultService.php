@@ -36,15 +36,9 @@ class DiagnosticResultService
     {
         $profile = $this->getProfile($item);
         $templateFields = $profile ? $this->getTemplateFields($profile) : collect();
-        $context = $this->getContextInfo($item);
 
         $schema = [];
 
-        $contextHtml = view('clinical::clinical.fulfillment-context', $context)->render();
-        $schema[] = TextEntry::make('context')
-            ->hiddenLabel()
-            ->html()
-            ->state($contextHtml);
 
         if ($templateFields->isNotEmpty()) {
             foreach ($templateFields as $field) {
