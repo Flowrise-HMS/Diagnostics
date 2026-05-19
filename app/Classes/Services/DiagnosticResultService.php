@@ -9,6 +9,7 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\TextEntry;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -40,9 +41,10 @@ class DiagnosticResultService
         $schema = [];
 
         $contextHtml = view('clinical::clinical.fulfillment-context', $context)->render();
-        $schema[] = \Filament\Forms\Components\Placeholder::make('context')
-            ->label('')
-            ->content($contextHtml);
+        $schema[] = TextEntry::make('context')
+            ->hiddenLabel()
+            ->html()
+            ->state($contextHtml);
 
         if ($templateFields->isNotEmpty()) {
             foreach ($templateFields as $field) {
