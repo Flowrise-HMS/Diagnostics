@@ -23,7 +23,7 @@ class DiagnosticServiceProfileForm
                             ->schema([
                                 Select::make('service_id')
                                     ->label('Service')
-                                    ->options(fn (): array => Service::query()
+                                    ->options(fn (): array => Service::query()->nonMedication()
                                         ->orderBy('name')
                                         ->get()
                                         ->mapWithKeys(fn (Service $service): array => [
