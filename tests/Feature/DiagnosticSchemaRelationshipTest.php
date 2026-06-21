@@ -3,7 +3,7 @@
 namespace Modules\Diagnostics\Tests\Feature;
 
 use Illuminate\Database\QueryException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
 use Modules\Diagnostics\Models\DiagnosticMedia;
 use Modules\Diagnostics\Models\DiagnosticObservation;
@@ -14,14 +14,13 @@ use Tests\TestCase;
 
 class DiagnosticSchemaRelationshipTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->artisan('module:migrate', ['module' => 'Clinical', '--force' => true]);
-        $this->artisan('module:migrate', ['module' => 'Diagnostics', '--force' => true]);
+        $this->migrateModules();
     }
 
     public function test_request_item_can_only_have_one_diagnostic_fulfillment(): void

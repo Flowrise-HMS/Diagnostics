@@ -8,6 +8,7 @@ use Filament\Tables\Table;
 use Modules\Core\Enums\NavigationGroup;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\DiagnosticsCluster;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\Pages\EditDiagnosticFulfillment;
+use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\Pages\ListDiagnosticFulfillmentActivities;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\Pages\ListDiagnosticFulfillments;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\Pages\ViewDiagnosticFulfillment;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\RelationManagers\DiagnosticReportVersionsRelationManager;
@@ -56,6 +57,7 @@ class DiagnosticFulfillmentResource extends Resource
             'index' => ListDiagnosticFulfillments::route('/'),
             'view' => ViewDiagnosticFulfillment::route('/{record}'),
             'edit' => EditDiagnosticFulfillment::route('/{record}/edit'),
+            'activities' => ListDiagnosticFulfillmentActivities::route('/{record}/activities'),
         ];
     }
 

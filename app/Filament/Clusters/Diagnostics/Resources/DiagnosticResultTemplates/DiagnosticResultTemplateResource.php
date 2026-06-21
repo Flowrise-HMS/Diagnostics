@@ -9,6 +9,7 @@ use Modules\Core\Enums\NavigationGroup;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\DiagnosticsCluster;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticResultTemplates\Pages\CreateDiagnosticResultTemplate;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticResultTemplates\Pages\EditDiagnosticResultTemplate;
+use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticResultTemplates\Pages\ListDiagnosticResultTemplateActivities;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticResultTemplates\Pages\ListDiagnosticResultTemplates;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticResultTemplates\Pages\ViewDiagnosticResultTemplate;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticResultTemplates\Schemas\DiagnosticResultTemplateForm;
@@ -48,6 +49,7 @@ class DiagnosticResultTemplateResource extends Resource
             'create' => CreateDiagnosticResultTemplate::route('/create'),
             'view' => ViewDiagnosticResultTemplate::route('/{record}'),
             'edit' => EditDiagnosticResultTemplate::route('/{record}/edit'),
+            'activities' => ListDiagnosticResultTemplateActivities::route('/{record}/activities'),
         ];
     }
 }

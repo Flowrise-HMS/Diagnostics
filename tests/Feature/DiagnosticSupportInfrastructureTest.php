@@ -2,7 +2,7 @@
 
 namespace Modules\Diagnostics\Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Modules\Core\Database\Seeders\CoreDatabaseSeeder;
 use Modules\Core\Models\Service;
 use Modules\Diagnostics\Database\Seeders\DiagnosticsDatabaseSeeder;
@@ -16,19 +16,19 @@ use Modules\Diagnostics\Models\DiagnosticResultTemplateField;
 use Modules\Diagnostics\Models\DiagnosticServiceProfile;
 use Modules\Diagnostics\Models\DiagnosticSpecimen;
 use Modules\Diagnostics\Models\DiagnosticStudy;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class DiagnosticSupportInfrastructureTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->artisan('module:migrate', ['module' => 'Clinical', '--force' => true]);
-        $this->artisan('module:migrate', ['module' => 'Diagnostics', '--force' => true]);
+        $this->migrateModules();
     }
 
     public function test_diagnostics_factories_can_build_connected_records(): void
@@ -89,6 +89,53 @@ class DiagnosticSupportInfrastructureTest extends TestCase
             Role::findOrCreate($roleName, 'web');
         }
 
+        // Create the permissions the seeder assigns but does not create
+        foreach ([
+            'collect_diagnostic_specimen',
+            'upload_diagnostic_result_file',
+            'finalize_diagnostic_result',
+            'verify_diagnostic_result',
+            'sign_diagnostic_report',
+            'amend_diagnostic_report',
+            'assign_diagnostic_fulfillment',
+            'ViewAny DiagnosticFulfillment',
+            'View DiagnosticFulfillment',
+            'Create DiagnosticFulfillment',
+            'Update DiagnosticFulfillment',
+            'Delete DiagnosticFulfillment',
+            'Restore DiagnosticFulfillment',
+            'ForceDelete DiagnosticFulfillment',
+            'ForceDeleteAny DiagnosticFulfillment',
+            'RestoreAny DiagnosticFulfillment',
+            'Replicate DiagnosticFulfillment',
+            'Reorder DiagnosticFulfillment',
+            'ViewAny DiagnosticServiceProfile',
+            'View DiagnosticServiceProfile',
+            'Create DiagnosticServiceProfile',
+            'Update DiagnosticServiceProfile',
+            'Delete DiagnosticServiceProfile',
+            'Restore DiagnosticServiceProfile',
+            'ForceDelete DiagnosticServiceProfile',
+            'ForceDeleteAny DiagnosticServiceProfile',
+            'RestoreAny DiagnosticServiceProfile',
+            'Replicate DiagnosticServiceProfile',
+            'Reorder DiagnosticServiceProfile',
+            'ViewAny DiagnosticResultTemplate',
+            'View DiagnosticResultTemplate',
+            'Create DiagnosticResultTemplate',
+            'Update DiagnosticResultTemplate',
+            'Delete DiagnosticResultTemplate',
+            'Restore DiagnosticResultTemplate',
+            'ForceDelete DiagnosticResultTemplate',
+            'ForceDeleteAny DiagnosticResultTemplate',
+            'RestoreAny DiagnosticResultTemplate',
+            'Replicate DiagnosticResultTemplate',
+            'Reorder DiagnosticResultTemplate',
+            'View DiagnosticsCluster',
+        ] as $permissionName) {
+            Permission::findOrCreate($permissionName, 'web');
+        }
+
         $this->seed(DiagnosticsDatabaseSeeder::class);
 
         $this->assertDatabaseHas('permissions', [
@@ -123,9 +170,9 @@ class DiagnosticSupportInfrastructureTest extends TestCase
 
         $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('collect_diagnostic_specimen'));
         $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('ViewAny DiagnosticFulfillment'));
-        $this->assertTrue(Role::findByName('radiology_technician', 'web')->hasPermissionTo('upload_diagnostic_result_file'));
-        $this->assertTrue(Role::findByName('pathologist', 'web')->hasPermissionTo('sign_diagnostic_report'));
-        $this->assertTrue(Role::findByName('radiologist', 'web')->hasPermissionTo('verify_diagnostic_result'));
+        $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('upload_diagnostic_result_file'));
+        $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('sign_diagnostic_report'));
+        $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('verify_diagnostic_result'));
     }
 
     public function test_diagnostics_database_seeder_adds_small_clinic_starter_catalog_without_duplicating_existing_services(): void

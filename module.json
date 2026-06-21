@@ -17,5 +17,10 @@
     "providers": [
         "Modules\\Diagnostics\\Providers\\DiagnosticsServiceProvider"
     ],
-    "files": []
+    "files": [],
+    "requires": [
+        "Modules\\Core",
+        "Modules\\Patient",
+        "Modules\\Clinical"
+    ]
 }

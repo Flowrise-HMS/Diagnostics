@@ -3,7 +3,7 @@
 namespace Modules\Diagnostics\Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Modules\Clinical\Models\RequestItem;
 use Modules\Core\Enums\NavigationGroup;
 use Modules\Core\Models\Service;
@@ -14,14 +14,13 @@ use Tests\TestCase;
 
 class DiagnosticReviewRegressionTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->artisan('module:migrate', ['module' => 'Clinical', '--force' => true]);
-        $this->artisan('module:migrate', ['module' => 'Diagnostics', '--force' => true]);
+        $this->migrateModules();
     }
 
     public function test_diagnostic_request_item_creation_and_cancellation_are_bridged_to_fulfillment_records(): void

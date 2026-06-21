@@ -15,6 +15,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Modules\Diagnostics\Enums\FulfillmentStatus;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
+use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\DiagnosticFulfillmentResource;
 
 class DiagnosticFulfillmentsTable
 {
@@ -196,6 +197,10 @@ class DiagnosticFulfillmentsTable
                     ViewAction::make(),
                     EditAction::make(),
                     DeleteAction::make(),
+                    Action::make('activities')
+                        ->label('Activities')
+                        ->icon('heroicon-o-bell-alert')
+                        ->url(fn ($record) => DiagnosticFulfillmentResource::getUrl('activities', ['record' => $record])),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

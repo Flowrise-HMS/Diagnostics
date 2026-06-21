@@ -3,7 +3,7 @@
 namespace Modules\Diagnostics\Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Modules\Core\Models\Service;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
 use Modules\Diagnostics\Models\DiagnosticResultFile;
@@ -14,14 +14,13 @@ use Tests\TestCase;
 
 class DiagnosticDomainContractTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->artisan('module:migrate', ['module' => 'Clinical', '--force' => true]);
-        $this->artisan('module:migrate', ['module' => 'Diagnostics', '--force' => true]);
+        $this->migrateModules();
     }
 
     public function test_diagnostic_service_profile_is_a_one_to_one_extension_of_service(): void

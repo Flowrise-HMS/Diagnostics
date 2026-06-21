@@ -9,6 +9,7 @@ use Modules\Core\Enums\NavigationGroup;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\DiagnosticsCluster;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Pages\CreateDiagnosticServiceProfile;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Pages\EditDiagnosticServiceProfile;
+use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Pages\ListDiagnosticServiceProfileActivities;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Pages\ListDiagnosticServiceProfiles;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Pages\ViewDiagnosticServiceProfile;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Schemas\DiagnosticServiceProfileForm;
@@ -48,6 +49,7 @@ class DiagnosticServiceProfileResource extends Resource
             'create' => CreateDiagnosticServiceProfile::route('/create'),
             'view' => ViewDiagnosticServiceProfile::route('/{record}'),
             'edit' => EditDiagnosticServiceProfile::route('/{record}/edit'),
+            'activities' => ListDiagnosticServiceProfileActivities::route('/{record}/activities'),
         ];
     }
 }
