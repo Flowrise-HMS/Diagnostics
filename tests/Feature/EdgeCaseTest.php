@@ -7,7 +7,6 @@ use Tests\TestCase;
 
 class EdgeCaseTest extends TestCase
 {
-
     public function test_fulfillment_status_values(): void
     {
         $values = FulfillmentStatus::values();

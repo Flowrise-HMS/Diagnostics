@@ -3,6 +3,8 @@
 namespace Modules\Diagnostics\Listeners;
 
 use Modules\Clinical\Events\RequestItemCreated;
+use Modules\Core\Settings\DiagnosticsSettings;
+use Modules\Core\Support\AppSettings;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
 use Modules\Diagnostics\Models\DiagnosticServiceProfile;
 
@@ -11,10 +13,10 @@ class CreateDiagnosticFulfillmentFromRequestItem
     public function handle(RequestItemCreated $event): void
     {
         try {
-            if (! app(\Modules\Core\Support\AppSettings::class)->features()->diagnostics_enabled) {
+            if (! app(AppSettings::class)->features()->diagnostics_enabled) {
                 return;
             }
-            if (! app(\Modules\Core\Settings\DiagnosticsSettings::class)->auto_create_fulfillment) {
+            if (! app(DiagnosticsSettings::class)->auto_create_fulfillment) {
                 return;
             }
         } catch (\Throwable) {

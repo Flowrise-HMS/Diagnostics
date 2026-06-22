@@ -5,6 +5,7 @@ namespace Modules\Diagnostics\Filament;
 use Coolsam\Modules\Concerns\ModuleFilamentPlugin;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Modules\Core\Settings\FeatureSettings;
 
 class DiagnosticsPlugin implements Plugin
 {
@@ -39,7 +40,7 @@ class DiagnosticsPlugin implements Plugin
     protected function diagnosticsEnabled(): bool
     {
         try {
-            return app(\Modules\Core\Settings\FeatureSettings::class)->diagnostics_enabled;
+            return app(FeatureSettings::class)->diagnostics_enabled;
         } catch (\Throwable) {
             return true;
         }

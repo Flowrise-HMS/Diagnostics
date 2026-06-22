@@ -14,8 +14,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Modules\Diagnostics\Enums\FulfillmentStatus;
-use Modules\Diagnostics\Models\DiagnosticFulfillment;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\DiagnosticFulfillmentResource;
+use Modules\Diagnostics\Models\DiagnosticFulfillment;
 
 class DiagnosticFulfillmentsTable
 {

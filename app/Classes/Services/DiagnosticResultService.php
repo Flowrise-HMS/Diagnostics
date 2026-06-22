@@ -3,26 +3,22 @@
 namespace Modules\Diagnostics\Classes\Services;
 
 use App\Models\User;
+use Carbon\Carbon;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Infolists\Components\TextEntry;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Modules\Clinical\Enums\TaskOutcome;
 use Modules\Clinical\Enums\TaskStatus;
 use Modules\Clinical\Models\RequestItem;
-use Modules\Clinical\Models\Task;
 use Modules\Core\Classes\Services\BranchService;
 use Modules\Diagnostics\Enums\FulfillmentStatus;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
-use Modules\Diagnostics\Models\DiagnosticResultFile;
 use Modules\Diagnostics\Models\DiagnosticResultTemplateField;
 use Modules\Diagnostics\Models\DiagnosticServiceProfile;
 
@@ -38,7 +34,6 @@ class DiagnosticResultService
         $templateFields = $profile ? $this->getTemplateFields($profile) : collect();
 
         $schema = [];
-
 
         if ($templateFields->isNotEmpty()) {
             foreach ($templateFields as $field) {
@@ -105,12 +100,12 @@ class DiagnosticResultService
             ]);
 
             if ($task->started_at && $task->completed_at) {
-                $start = $task->started_at instanceof \Carbon\Carbon
+                $start = $task->started_at instanceof Carbon
                     ? $task->started_at
-                    : \Carbon\Carbon::parse($task->started_at);
-                $end = $task->completed_at instanceof \Carbon\Carbon
+                    : Carbon::parse($task->started_at);
+                $end = $task->completed_at instanceof Carbon
                     ? $task->completed_at
-                    : \Carbon\Carbon::parse($task->completed_at);
+                    : Carbon::parse($task->completed_at);
                 $task->update(['duration_minutes' => $start->diffInMinutes($end)]);
             }
 
@@ -118,16 +113,16 @@ class DiagnosticResultService
                 foreach ((array) $data['result_files'] as $file) {
                     $fileModel = $fulfillment->resultFiles()->create([
                         'branch_id' => $this->branchService->getDefaultBranchId(),
-                        'file_name' => $file instanceof \Illuminate\Http\UploadedFile
+                        'file_name' => $file instanceof UploadedFile
                             ? $file->getClientOriginalName()
                             : (is_string($file) ? basename($file) : 'file'),
-                        'file_path' => $file instanceof \Illuminate\Http\UploadedFile
+                        'file_path' => $file instanceof UploadedFile
                             ? $file->store('diagnostics/results', 'public')
                             : (is_string($file) ? $file : null),
-                        'mime_type' => $file instanceof \Illuminate\Http\UploadedFile
+                        'mime_type' => $file instanceof UploadedFile
                             ? $file->getMimeType()
                             : null,
-                        'file_type' => $file instanceof \Illuminate\Http\UploadedFile
+                        'file_type' => $file instanceof UploadedFile
                             ? $file->getClientOriginalExtension()
                             : null,
                         'source' => 'internal_entry',
@@ -189,6 +184,7 @@ class DiagnosticResultService
         if (is_string($options)) {
             $parts = explode(',', $options);
             $parts = array_map('trim', $parts);
+
             return array_combine($parts, $parts);
         }
 
