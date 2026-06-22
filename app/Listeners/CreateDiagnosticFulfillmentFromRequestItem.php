@@ -10,6 +10,16 @@ class CreateDiagnosticFulfillmentFromRequestItem
 {
     public function handle(RequestItemCreated $event): void
     {
+        try {
+            if (! app(\Modules\Core\Support\AppSettings::class)->features()->diagnostics_enabled) {
+                return;
+            }
+            if (! app(\Modules\Core\Settings\DiagnosticsSettings::class)->auto_create_fulfillment) {
+                return;
+            }
+        } catch (\Throwable) {
+        }
+
         $requestItem = $event->requestItem->loadMissing('serviceRequest');
 
         $profile = DiagnosticServiceProfile::query()

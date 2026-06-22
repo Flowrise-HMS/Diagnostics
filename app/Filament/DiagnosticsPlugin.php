@@ -8,7 +8,9 @@ use Filament\Panel;
 
 class DiagnosticsPlugin implements Plugin
 {
-    use ModuleFilamentPlugin;
+    use ModuleFilamentPlugin {
+        register as protected traitRegister;
+    }
 
     public function getModuleName(): string
     {
@@ -20,8 +22,26 @@ class DiagnosticsPlugin implements Plugin
         return 'diagnostics';
     }
 
+    public function register(Panel $panel): void
+    {
+        if (! $this->diagnosticsEnabled()) {
+            return;
+        }
+
+        $this->traitRegister($panel);
+    }
+
     public function boot(Panel $panel): void
     {
-        // TODO: Implement boot() method.
+        //
+    }
+
+    protected function diagnosticsEnabled(): bool
+    {
+        try {
+            return app(\Modules\Core\Settings\FeatureSettings::class)->diagnostics_enabled;
+        } catch (\Throwable) {
+            return true;
+        }
     }
 }
