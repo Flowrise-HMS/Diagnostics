@@ -6,15 +6,23 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Modules\Core\Database\Seeders\CoreDatabaseSeeder;
 use Modules\Core\Models\Service;
 use Modules\Diagnostics\Database\Seeders\DiagnosticsDatabaseSeeder;
+use Modules\Diagnostics\Enums\DiagnosticDiscipline;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
+use Modules\Diagnostics\Models\DiagnosticFulfillmentAllocation;
 use Modules\Diagnostics\Models\DiagnosticMedia;
 use Modules\Diagnostics\Models\DiagnosticObservation;
+use Modules\Diagnostics\Models\DiagnosticObservationComponent;
+use Modules\Diagnostics\Models\DiagnosticPanel;
+use Modules\Diagnostics\Models\DiagnosticPanelItem;
+use Modules\Diagnostics\Models\DiagnosticReferenceRange;
 use Modules\Diagnostics\Models\DiagnosticReportVersion;
 use Modules\Diagnostics\Models\DiagnosticResultFile;
 use Modules\Diagnostics\Models\DiagnosticResultTemplate;
 use Modules\Diagnostics\Models\DiagnosticResultTemplateField;
 use Modules\Diagnostics\Models\DiagnosticServiceProfile;
 use Modules\Diagnostics\Models\DiagnosticSpecimen;
+use Modules\Diagnostics\Models\DiagnosticSpecimenContainer;
+use Modules\Diagnostics\Models\DiagnosticSpecimenProcessingEvent;
 use Modules\Diagnostics\Models\DiagnosticStudy;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -74,6 +82,39 @@ class DiagnosticSupportInfrastructureTest extends TestCase
         $this->assertCount(1, $reportVersion->fresh()->observations);
         $this->assertTrue($media->study->is($study));
         $this->assertTrue($resultFile->reportVersion->is($reportVersion));
+    }
+
+    public function test_catalog_panel_reference_range_and_allocation_factories(): void
+    {
+        $profile = DiagnosticServiceProfile::factory()->create();
+        $panel = DiagnosticPanel::factory()->create(['profile_id' => $profile->id]);
+        $item = DiagnosticPanelItem::factory()->create(['panel_id' => $panel->id]);
+        $range = DiagnosticReferenceRange::factory()->create(['profile_id' => $profile->id]);
+        $fulfillment = DiagnosticFulfillment::factory()->create();
+        $allocation = DiagnosticFulfillmentAllocation::factory()->create([
+            'fulfillment_id' => $fulfillment->id,
+        ]);
+        $observation = DiagnosticObservation::factory()->create([
+            'fulfillment_id' => $fulfillment->id,
+        ]);
+        $component = DiagnosticObservationComponent::factory()->create([
+            'observation_id' => $observation->id,
+        ]);
+        $container = DiagnosticSpecimenContainer::factory()->create([
+            'specimen_id' => DiagnosticSpecimen::factory()->create([
+                'fulfillment_id' => $fulfillment->id,
+            ])->id,
+        ]);
+        $processingEvent = DiagnosticSpecimenProcessingEvent::factory()->create([
+            'specimen_id' => $container->specimen_id,
+        ]);
+
+        $this->assertTrue($panel->profile->is($profile));
+        $this->assertTrue($item->panel->is($panel));
+        $this->assertTrue($range->profile->is($profile));
+        $this->assertTrue($allocation->fulfillment->is($fulfillment));
+        $this->assertTrue($component->observation->is($observation));
+        $this->assertTrue($container->specimen->is($processingEvent->specimen));
     }
 
     public function test_diagnostics_database_seeder_creates_and_assigns_custom_workflow_permissions(): void
@@ -173,6 +214,12 @@ class DiagnosticSupportInfrastructureTest extends TestCase
         $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('upload_diagnostic_result_file'));
         $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('sign_diagnostic_report'));
         $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('verify_diagnostic_result'));
+        $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('record_structured_diagnostic_observations'));
+        $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('print_diagnostic_lab_result'));
+        $this->assertTrue(Role::findByName('super_admin', 'web')->hasPermissionTo('manage_diagnostic_panels'));
+        $this->assertTrue(Role::findByName('super_admin', 'web')->hasPermissionTo('manage_diagnostic_reference_ranges'));
+        $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('manage_diagnostic_allocations'));
+        $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('manage_diagnostic_specimen_processing'));
     }
 
     public function test_diagnostics_database_seeder_adds_small_clinic_starter_catalog_without_duplicating_existing_services(): void
@@ -203,7 +250,7 @@ class DiagnosticSupportInfrastructureTest extends TestCase
             ->first();
 
         $this->assertNotNull($fbcProfile);
-        $this->assertSame('lab', $fbcProfile->discipline);
+        $this->assertSame(DiagnosticDiscipline::LAB, $fbcProfile->discipline);
         $this->assertNotNull($fbcProfile->defaultTemplate);
         $this->assertSame(4, $fbcProfile->defaultTemplate->fields()->count());
         $this->assertTrue($fbcProfile->defaultTemplate->fields->pluck('label')->contains('Hemoglobin'));
@@ -213,7 +260,7 @@ class DiagnosticSupportInfrastructureTest extends TestCase
             ->first();
 
         $this->assertNotNull($histopathologyProfile);
-        $this->assertSame('pathology', $histopathologyProfile->discipline);
+        $this->assertSame(DiagnosticDiscipline::PATHOLOGY, $histopathologyProfile->discipline);
         $this->assertNotNull($histopathologyProfile->defaultTemplate);
 
         $pelvicUltrasoundProfile = DiagnosticServiceProfile::query()
@@ -221,6 +268,6 @@ class DiagnosticSupportInfrastructureTest extends TestCase
             ->first();
 
         $this->assertNotNull($pelvicUltrasoundProfile);
-        $this->assertSame('radiology', $pelvicUltrasoundProfile->discipline);
+        $this->assertSame(DiagnosticDiscipline::RADIOLOGY, $pelvicUltrasoundProfile->discipline);
     }
 }

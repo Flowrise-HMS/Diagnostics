@@ -2,6 +2,7 @@
 
 namespace Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\Schemas;
 
+use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -30,6 +31,15 @@ class DiagnosticFulfillmentInfolist
                 Section::make('Fulfillment')
                     ->columns(2)
                     ->schema([
+                        TextEntry::make('accession_number')
+                            ->label('Accession Number')
+                            ->placeholder('-'),
+                        TextEntry::make('priority')
+                            ->badge(),
+                        TextEntry::make('scheduled_at')
+                            ->label('Scheduled At')
+                            ->dateTime()
+                            ->placeholder('-'),
                         TextEntry::make('discipline')
                             ->badge(),
                         TextEntry::make('status')
@@ -68,6 +78,18 @@ class DiagnosticFulfillmentInfolist
                             ->label('Report Status')
                             ->badge()
                             ->placeholder('-'),
+                        IconEntry::make('latestReportVersion.is_critical')
+                            ->label('Critical Result')
+                            ->boolean()
+                            ->trueIcon('heroicon-o-exclamation-triangle')
+                            ->falseIcon('heroicon-o-check-circle')
+                            ->trueColor('danger')
+                            ->falseColor('success'),
+                        TextEntry::make('latestReportVersion.critical_notified_at')
+                            ->label('Critical Notified At')
+                            ->dateTime()
+                            ->placeholder('-')
+                            ->visible(fn (DiagnosticFulfillment $record): bool => (bool) $record->latestReportVersion?->is_critical),
                         TextEntry::make('latestReportVersion.signatures_count')
                             ->label('Signatures')
                             ->state(fn (DiagnosticFulfillment $record): int => $record->latestReportVersion?->signatures()->count() ?? 0),

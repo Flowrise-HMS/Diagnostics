@@ -27,6 +27,8 @@ class DiagnosticResultTemplateResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static ?string $icon = 'heroicon-o-document-text';
+
     public static function form(Schema $schema): Schema
     {
         return DiagnosticResultTemplateForm::configure($schema);

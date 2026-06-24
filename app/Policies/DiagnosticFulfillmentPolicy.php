@@ -67,9 +67,19 @@ class DiagnosticFulfillmentPolicy
         return $authUser->can('Reorder DiagnosticFulfillment');
     }
 
+    public function assign(AuthUser $authUser, DiagnosticFulfillment $diagnosticFulfillment): bool
+    {
+        return $authUser->can('assign_diagnostic_fulfillment');
+    }
+
     public function collectSpecimen(AuthUser $authUser, DiagnosticFulfillment $diagnosticFulfillment): bool
     {
         return $authUser->can('collect_diagnostic_specimen');
+    }
+
+    public function manageSpecimenProcessing(AuthUser $authUser, DiagnosticFulfillment $diagnosticFulfillment): bool
+    {
+        return $authUser->can('manage_diagnostic_specimen_processing');
     }
 
     public function uploadResultFile(AuthUser $authUser, DiagnosticFulfillment $diagnosticFulfillment): bool
@@ -80,6 +90,11 @@ class DiagnosticFulfillmentPolicy
     public function finalizeResult(AuthUser $authUser, DiagnosticFulfillment $diagnosticFulfillment): bool
     {
         return $authUser->can('finalize_diagnostic_result');
+    }
+
+    public function recordStructuredResults(AuthUser $authUser, DiagnosticFulfillment $diagnosticFulfillment): bool
+    {
+        return $authUser->can('record_structured_diagnostic_observations');
     }
 
     public function verifyResult(AuthUser $authUser, DiagnosticFulfillment $diagnosticFulfillment): bool
@@ -97,8 +112,18 @@ class DiagnosticFulfillmentPolicy
         return $authUser->can('amend_diagnostic_report');
     }
 
-    public function assign(AuthUser $authUser, DiagnosticFulfillment $diagnosticFulfillment): bool
+    public function manageAllocations(AuthUser $authUser, DiagnosticFulfillment $diagnosticFulfillment): bool
     {
-        return $authUser->can('assign_diagnostic_fulfillment');
+        return $authUser->can('manage_diagnostic_allocations');
+    }
+
+    public function startProcessing(AuthUser $authUser, DiagnosticFulfillment $diagnosticFulfillment): bool
+    {
+        return $authUser->can('Update DiagnosticFulfillment');
+    }
+
+    public function printLabResult(AuthUser $authUser, DiagnosticFulfillment $diagnosticFulfillment): bool
+    {
+        return $authUser->can('print_diagnostic_lab_result');
     }
 }

@@ -39,6 +39,28 @@ class DiagnosticsCustomPermissionSeeder extends Seeder
             'super_admin',
             'laboratory_technician',
         ],
+        'manage_diagnostic_panels' => [
+            'super_admin',
+        ],
+        'manage_diagnostic_reference_ranges' => [
+            'super_admin',
+        ],
+        'record_structured_diagnostic_observations' => [
+            'super_admin',
+            'laboratory_technician',
+        ],
+        'manage_diagnostic_allocations' => [
+            'super_admin',
+            'laboratory_technician',
+        ],
+        'manage_diagnostic_specimen_processing' => [
+            'super_admin',
+            'laboratory_technician',
+        ],
+        'print_diagnostic_lab_result' => [
+            'super_admin',
+            'laboratory_technician',
+        ],
     ];
 
     public function run(): void
@@ -46,21 +68,14 @@ class DiagnosticsCustomPermissionSeeder extends Seeder
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         foreach ($this->matrix as $permissionName => $roles) {
-            $permission = Permission::query()
-                ->where('name', $permissionName)
-                ->where('guard_name', 'web')
-                ->first();
-
-            if ($permission === null) {
-                continue;
-            }
+            Permission::findOrCreate($permissionName, 'web');
 
             foreach ($roles as $roleName) {
                 Role::query()
                     ->where('name', $roleName)
                     ->where('guard_name', 'web')
                     ->first()
-                    ?->givePermissionTo($permission);
+                    ?->givePermissionTo($permissionName);
             }
         }
 

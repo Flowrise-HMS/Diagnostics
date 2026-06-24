@@ -4,6 +4,7 @@ namespace Modules\Diagnostics\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Diagnostics\Enums\DiagnosticDiscipline;
 use Modules\Diagnostics\Enums\FulfillmentStatus;
 
 class DiagnosticFulfillmentRequest extends FormRequest
@@ -18,7 +19,7 @@ class DiagnosticFulfillmentRequest extends FormRequest
         return [
             'request_item_id' => ['required', 'uuid', 'exists:request_items,id'],
             'branch_id' => ['required', 'uuid', 'exists:branches,id'],
-            'discipline' => ['required', 'string', 'max:100'],
+            'discipline' => ['required', Rule::enum(DiagnosticDiscipline::class)],
             'status' => ['nullable', Rule::enum(FulfillmentStatus::class)],
         ];
     }

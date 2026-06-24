@@ -9,9 +9,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Core\Models\BaseModel;
 use Modules\Diagnostics\Database\Factories\DiagnosticResultTemplateFactory;
 
+/**
+ * @method static static create(array<string, mixed> $attributes = [])
+ */
 class DiagnosticResultTemplate extends BaseModel
 {
+    /** @use HasFactory<DiagnosticResultTemplateFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $keyType = 'string';

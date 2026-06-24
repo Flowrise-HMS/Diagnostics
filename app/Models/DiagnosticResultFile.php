@@ -8,10 +8,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Core\Models\BaseModel;
 use Modules\Diagnostics\Database\Factories\DiagnosticResultFileFactory;
+use Modules\Diagnostics\Enums\FileSourceType;
 
+/**
+ * @method static static create(array<string, mixed> $attributes = [])
+ */
 class DiagnosticResultFile extends BaseModel
 {
+    /** @use HasFactory<DiagnosticResultFileFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $keyType = 'string';
@@ -24,7 +30,17 @@ class DiagnosticResultFile extends BaseModel
         'file_name',
         'file_path',
         'mime_type',
+        'file_size',
+        'checksum',
+        'is_authoritative',
         'uploaded_by',
+        'notes',
+    ];
+
+    protected $casts = [
+        'source' => FileSourceType::class,
+        'file_size' => 'integer',
+        'is_authoritative' => 'boolean',
     ];
 
     protected static function newFactory(): DiagnosticResultFileFactory

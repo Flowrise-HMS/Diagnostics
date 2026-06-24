@@ -5,7 +5,10 @@ namespace Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\Diagnostic
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
+use Modules\Diagnostics\Filament\Actions\PrintLabResultAction;
+use Modules\Diagnostics\Filament\Actions\RecordStructuredResultsAction;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\DiagnosticFulfillmentResource;
+use Modules\Diagnostics\Models\DiagnosticFulfillment;
 
 class ViewDiagnosticFulfillment extends ViewRecord
 {
@@ -14,6 +17,8 @@ class ViewDiagnosticFulfillment extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            RecordStructuredResultsAction::make(fn (): DiagnosticFulfillment => $this->getRecord()),
+            PrintLabResultAction::make(fn (): DiagnosticFulfillment => $this->getRecord()),
             EditAction::make(),
             Action::make('activities')
                 ->label('Activities')

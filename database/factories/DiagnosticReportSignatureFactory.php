@@ -16,6 +16,8 @@ class DiagnosticReportSignatureFactory extends Factory
         return [
             'report_version_id' => DiagnosticReportVersion::factory(),
             'signed_by' => User::factory(),
+            'signature_type' => fake()->randomElement(['performed', 'verified', 'signed', 'countersigned']),
+            'signature' => fake()->optional()->uuid(),
             'role' => fake()->randomElement(['pathologist', 'radiologist', 'laboratory_scientist']),
             'signed_at' => fake()->dateTimeBetween('-2 days', 'now'),
             'notes' => fake()->optional()->sentence(),

@@ -12,25 +12,22 @@ This document is written as the canonical guide for the module. It is meant to b
 
 ## Current Status
 
-Diagnostics is **in progress**.
+Diagnostics is **complete** for operational use (HL7 and FHIR export remain deferred).
 
-What is already present:
+What is available:
 
-- Clinical-to-Diagnostics bridge from `RequestItem` creation/cancellation into `DiagnosticFulfillment`
-- core schema for profiles, templates, fulfillments, specimens, observations, reports, report signatures, files, studies, and media
-- Filament resources for:
-  - `DiagnosticFulfillment`
-  - `DiagnosticServiceProfile`
-  - `DiagnosticResultTemplate`
-- workflow-oriented permissions and Shield-style resource permissions
-- starter seed data for common small-clinic diagnostics across lab, radiology, and pathology
+- Clinical-to-Diagnostics bridge from `RequestItem` with accession numbers, priority, and discipline stubs
+- full in-scope schema: profiles, panels, reference ranges, fulfillments, specimens, observations, components, reports, files, studies, media, allocations
+- structured observation persistence via `DiagnosticObservationWriter` linked to report versions
+- Filament operations: fulfillment worklist, relation managers, discipline-aware actions, structured result entry, lab result printing
+- Clinical workspace template-driven lab result entry via `FulfillmentService`
+- catalog admin: panels and reference ranges under service profiles; aligned template fields
+- starter seed data for common lab, radiology, and pathology services
 
-What is still being expanded:
+Explicitly deferred (global interoperability — last across all modules):
 
-- richer structured observation capture driven directly from default templates during result entry
-- deeper panel/reference-range/component modeling
-- broader radiology scheduling/allocation depth
-- fuller pathology and interoperability workflow coverage
+- HL7 message log / MLLP / LIS orchestration
+- FHIR export transformers (`DiagnosticReport`, `Specimen`, `ImagingStudy`)
 
 Use this README as both:
 

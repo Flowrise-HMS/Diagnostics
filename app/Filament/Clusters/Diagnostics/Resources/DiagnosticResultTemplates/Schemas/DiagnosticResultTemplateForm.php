@@ -50,9 +50,16 @@ class DiagnosticResultTemplateForm
                             ->relationship()
                             ->schema([
                                 TextInput::make('field_key')
-                                    ->required(),
+                                    ->required()
+                                    ->maxLength(255),
                                 TextInput::make('label')
-                                    ->required(),
+                                    ->required()
+                                    ->maxLength(255),
+                                TextInput::make('observation_code')
+                                    ->label('Observation Code (LOINC)')
+                                    ->maxLength(255),
+                                TextInput::make('observation_name')
+                                    ->maxLength(255),
                                 Select::make('value_type')
                                     ->options([
                                         'numeric' => 'Numeric',
@@ -61,6 +68,17 @@ class DiagnosticResultTemplateForm
                                     ])
                                     ->required()
                                     ->live(),
+                                TextInput::make('default_units')
+                                    ->label('Default Units')
+                                    ->maxLength(50),
+                                Toggle::make('is_required')
+                                    ->default(false),
+                                TextInput::make('reference_range_low')
+                                    ->label('Reference Low')
+                                    ->numeric(),
+                                TextInput::make('reference_range_high')
+                                    ->label('Reference High')
+                                    ->numeric(),
                                 TextInput::make('sort_order')
                                     ->numeric()
                                     ->default(0)

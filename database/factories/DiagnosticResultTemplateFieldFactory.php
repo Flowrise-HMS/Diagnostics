@@ -16,9 +16,16 @@ class DiagnosticResultTemplateFieldFactory extends Factory
 
         return [
             'template_id' => DiagnosticResultTemplate::factory(),
+            'observation_code' => fake()->optional()->numerify('#####-#'),
+            'observation_name' => str($label)->title()->toString(),
+            'data_type' => fake()->randomElement(['numeric', 'text', 'coded', 'boolean', 'range']),
             'field_key' => str($label)->snake()->toString(),
             'label' => str($label)->title()->toString(),
             'value_type' => fake()->randomElement(['numeric', 'text', 'select']),
+            'default_units' => fake()->optional()->randomElement(['g/dL', 'mg/dL', '%']),
+            'is_required' => fake()->boolean(30),
+            'reference_range_low' => fake()->optional()->randomFloat(2, 1, 50),
+            'reference_range_high' => fake()->optional()->randomFloat(2, 51, 200),
             'sort_order' => fake()->numberBetween(1, 20),
         ];
     }

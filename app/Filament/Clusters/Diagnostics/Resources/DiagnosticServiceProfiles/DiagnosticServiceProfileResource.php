@@ -12,6 +12,8 @@ use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServic
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Pages\ListDiagnosticServiceProfileActivities;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Pages\ListDiagnosticServiceProfiles;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Pages\ViewDiagnosticServiceProfile;
+use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\RelationManagers\DiagnosticPanelsRelationManager;
+use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\RelationManagers\DiagnosticReferenceRangesRelationManager;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Schemas\DiagnosticServiceProfileForm;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Schemas\DiagnosticServiceProfileInfolist;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Tables\DiagnosticServiceProfilesTable;
@@ -25,7 +27,9 @@ class DiagnosticServiceProfileResource extends Resource
 
     protected static ?string $cluster = DiagnosticsCluster::class;
 
-    protected static ?string $recordTitleAttribute = 'discipline';
+    protected static ?string $recordTitleAttribute = 'title';
+
+    protected static ?string $icon = 'heroicon-o-beaker';
 
     public static function form(Schema $schema): Schema
     {
@@ -40,6 +44,14 @@ class DiagnosticServiceProfileResource extends Resource
     public static function table(Table $table): Table
     {
         return DiagnosticServiceProfilesTable::configure($table);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            DiagnosticPanelsRelationManager::class,
+            DiagnosticReferenceRangesRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

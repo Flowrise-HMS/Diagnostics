@@ -7,13 +7,19 @@ use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Modules\Diagnostics\Enums\DiagnosticDiscipline;
 use Modules\Diagnostics\Enums\FulfillmentStatus;
+use Modules\Diagnostics\Enums\ReportVersionStatus;
+use Modules\Diagnostics\Filament\Actions\PrintLabResultAction;
+use Modules\Diagnostics\Filament\Actions\RecordStructuredResultsAction;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\DiagnosticFulfillmentResource;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
 
@@ -37,10 +43,30 @@ class DiagnosticFulfillmentsTable
                     ->label('Patient')
                     ->state(fn (DiagnosticFulfillment $record): string => $record->requestItem?->serviceRequest?->patient?->full_name ?? $record->requestItem?->serviceRequest?->guest_name ?? 'Guest')
                     ->searchable(),
+                TextColumn::make('accession_number')
+                    ->label('Accession')
+                    ->searchable()
+                    ->sortable()
+                    ->placeholder('-'),
+                TextColumn::make('priority')
+                    ->badge()
+                    ->sortable(),
+                TextColumn::make('scheduled_at')
+                    ->label('Scheduled')
+                    ->dateTime()
+                    ->sortable()
+                    ->placeholder('-'),
                 TextColumn::make('discipline')
                     ->badge(),
                 TextColumn::make('status')
                     ->badge(),
+                IconColumn::make('latestReportVersion.is_critical')
+                    ->label('Critical')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-exclamation-triangle')
+                    ->falseIcon('heroicon-o-minus')
+                    ->trueColor('danger')
+                    ->falseColor('gray'),
                 TextColumn::make('specimens_count')
                     ->label('Specimens')
                     ->state(fn (DiagnosticFulfillment $record): int => $record->specimens()->count()),
@@ -59,11 +85,7 @@ class DiagnosticFulfillmentsTable
                 SelectFilter::make('status')
                     ->options(FulfillmentStatus::class),
                 SelectFilter::make('discipline')
-                    ->options([
-                        'lab' => 'Lab',
-                        'radiology' => 'Radiology',
-                        'pathology' => 'Pathology',
-                    ]),
+                    ->options(DiagnosticDiscipline::class),
             ])
             ->recordActions([
                 ActionGroup::make([
@@ -71,10 +93,17 @@ class DiagnosticFulfillmentsTable
                         ->label('Schedule')
                         ->icon('heroicon-o-calendar')
                         ->color('info')
-                        ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('assign_diagnostic_fulfillment') && $record->status === FulfillmentStatus::PENDING)
-                        ->requiresConfirmation()
-                        ->action(function (DiagnosticFulfillment $record): void {
-                            $record->schedule();
+                        ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('assign', $record)
+                            && $record->discipline->supportsSchedulingWorkflow()
+                            && $record->status === FulfillmentStatus::PENDING)
+                        ->schema([
+                            DateTimePicker::make('scheduled_at')
+                                ->label('Scheduled At')
+                                ->default(now())
+                                ->required(),
+                        ])
+                        ->action(function (DiagnosticFulfillment $record, array $data): void {
+                            $record->schedule($data['scheduled_at']);
 
                             Notification::make()
                                 ->title('Fulfillment scheduled.')
@@ -85,7 +114,9 @@ class DiagnosticFulfillmentsTable
                         ->label('Collect Specimen')
                         ->icon('heroicon-o-beaker')
                         ->color('warning')
-                        ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('collect_diagnostic_specimen') && in_array($record->status, [FulfillmentStatus::PENDING, FulfillmentStatus::SCHEDULED], true))
+                        ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('collectSpecimen', $record)
+                            && $record->discipline->supportsSpecimenWorkflow()
+                            && in_array($record->status, [FulfillmentStatus::PENDING, FulfillmentStatus::SCHEDULED], true))
                         ->schema([
                             Select::make('specimen_type')
                                 ->options([
@@ -97,7 +128,7 @@ class DiagnosticFulfillmentsTable
                                 ->required(),
                         ])
                         ->action(function (DiagnosticFulfillment $record, array $data): void {
-                            $record->collectSpecimen($data['specimen_type']);
+                            $record->collectSpecimen($data['specimen_type'], auth()->user());
 
                             Notification::make()
                                 ->title('Specimen collected.')
@@ -108,7 +139,7 @@ class DiagnosticFulfillmentsTable
                         ->label('Start Processing')
                         ->icon('heroicon-o-play')
                         ->color('primary')
-                        ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('Update DiagnosticFulfillment') && in_array($record->status, [FulfillmentStatus::PENDING, FulfillmentStatus::SCHEDULED, FulfillmentStatus::COLLECTED], true))
+                        ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('startProcessing', $record) && in_array($record->status, [FulfillmentStatus::PENDING, FulfillmentStatus::SCHEDULED, FulfillmentStatus::COLLECTED], true))
                         ->requiresConfirmation()
                         ->action(function (DiagnosticFulfillment $record): void {
                             $record->startProcessing();
@@ -122,14 +153,11 @@ class DiagnosticFulfillmentsTable
                         ->label('Finalize Result')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
-                        ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('finalize_diagnostic_result'))
+                        ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('finalizeResult', $record))
                         ->schema([
                             Select::make('report_status')
-                                ->options([
-                                    'preliminary' => 'Preliminary',
-                                    'final' => 'Final',
-                                ])
-                                ->default('final')
+                                ->options(ReportVersionStatus::class)
+                                ->default(ReportVersionStatus::FINAL)
                                 ->required(),
                         ])
                         ->action(function (DiagnosticFulfillment $record, array $data): void {
@@ -144,7 +172,7 @@ class DiagnosticFulfillmentsTable
                         ->label('Verify Result')
                         ->icon('heroicon-o-shield-check')
                         ->color('success')
-                        ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('verify_diagnostic_result') && $record->latestReportVersion !== null)
+                        ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('verifyResult', $record) && $record->latestReportVersion !== null)
                         ->requiresConfirmation()
                         ->action(function (DiagnosticFulfillment $record): void {
                             $record->verifyResult();
@@ -158,7 +186,7 @@ class DiagnosticFulfillmentsTable
                         ->label('Sign Report')
                         ->icon('heroicon-o-pencil-square')
                         ->color('gray')
-                        ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('sign_diagnostic_report') && $record->latestReportVersion !== null)
+                        ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('signReport', $record) && $record->latestReportVersion !== null)
                         ->schema([
                             Select::make('role')
                                 ->options([
@@ -184,7 +212,7 @@ class DiagnosticFulfillmentsTable
                         ->label('Amend Report')
                         ->icon('heroicon-o-arrow-path')
                         ->color('warning')
-                        ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('amend_diagnostic_report') && $record->latestReportVersion !== null)
+                        ->visible(fn (DiagnosticFulfillment $record): bool => auth()->user()?->can('amendReport', $record) && $record->latestReportVersion !== null)
                         ->requiresConfirmation()
                         ->action(function (DiagnosticFulfillment $record): void {
                             $record->amendReport();
@@ -194,6 +222,8 @@ class DiagnosticFulfillmentsTable
                                 ->success()
                                 ->send();
                         }),
+                    PrintLabResultAction::make(),
+                    RecordStructuredResultsAction::make(),
                     ViewAction::make(),
                     EditAction::make(),
                     DeleteAction::make(),

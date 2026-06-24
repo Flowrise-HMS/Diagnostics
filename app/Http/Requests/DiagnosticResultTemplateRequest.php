@@ -3,6 +3,7 @@
 namespace Modules\Diagnostics\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class DiagnosticResultTemplateRequest extends FormRequest
 {
@@ -21,12 +22,18 @@ class DiagnosticResultTemplateRequest extends FormRequest
             'is_default' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
             'fields' => ['nullable', 'array'],
-            'fields.*.name' => ['required_with:fields', 'string', 'max:255'],
-            'fields.*.field_type' => ['required_with:fields', 'string', 'max:50'],
-            'fields.*.unit' => ['nullable', 'string', 'max:50'],
-            'fields.*.reference_range_low' => ['nullable', 'string', 'max:50'],
-            'fields.*.reference_range_high' => ['nullable', 'string', 'max:50'],
+            'fields.*.field_key' => ['required_with:fields', 'string', 'max:255'],
+            'fields.*.label' => ['required_with:fields', 'string', 'max:255'],
+            'fields.*.value_type' => ['required_with:fields', 'string', Rule::in(['numeric', 'text', 'select'])],
+            'fields.*.observation_code' => ['nullable', 'string', 'max:255'],
+            'fields.*.observation_name' => ['nullable', 'string', 'max:255'],
+            'fields.*.data_type' => ['nullable', 'string', 'max:50'],
+            'fields.*.default_units' => ['nullable', 'string', 'max:50'],
+            'fields.*.is_required' => ['nullable', 'boolean'],
+            'fields.*.reference_range_low' => ['nullable', 'numeric'],
+            'fields.*.reference_range_high' => ['nullable', 'numeric'],
             'fields.*.sort_order' => ['nullable', 'integer', 'min:0'],
+            'fields.*.options' => ['nullable', 'array'],
         ];
     }
 
@@ -35,6 +42,9 @@ class DiagnosticResultTemplateRequest extends FormRequest
         return [
             'profile_id.required' => 'Service profile is required.',
             'name.required' => 'Template name is required.',
+            'fields.*.field_key.required_with' => 'Each field requires a field key.',
+            'fields.*.label.required_with' => 'Each field requires a label.',
+            'fields.*.value_type.required_with' => 'Each field requires a value type.',
         ];
     }
 }

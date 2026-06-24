@@ -6,6 +6,8 @@ use Illuminate\Database\Seeder;
 use Modules\Core\Enums\CoverageType;
 use Modules\Core\Models\Service;
 use Modules\Core\Models\ServiceCategory;
+use Modules\Diagnostics\Models\DiagnosticPanelItem;
+use Modules\Diagnostics\Models\DiagnosticReferenceRange;
 use Modules\Diagnostics\Models\DiagnosticResultTemplate;
 use Modules\Diagnostics\Models\DiagnosticServiceProfile;
 
@@ -61,11 +63,21 @@ class DiagnosticStarterCatalogSeeder extends Seeder
                     [
                         'label' => $field['label'],
                         'value_type' => $field['value_type'],
+                        'observation_code' => $field['observation_code'] ?? null,
+                        'observation_name' => $field['observation_name'] ?? $field['label'],
+                        'data_type' => $field['data_type'] ?? $field['value_type'],
+                        'default_units' => $field['default_units'] ?? null,
+                        'is_required' => $field['is_required'] ?? false,
+                        'reference_range_low' => $field['reference_range_low'] ?? null,
+                        'reference_range_high' => $field['reference_range_high'] ?? null,
                         'sort_order' => $index + 1,
                     ]
                 );
             }
         }
+
+        $this->seedPanels();
+        $this->seedStarterReferenceRanges();
     }
 
     protected function ensureCategory(string $code, string $name, string $description, int $sortOrder): ServiceCategory
@@ -129,6 +141,8 @@ class DiagnosticStarterCatalogSeeder extends Seeder
                 'discipline' => $entry['discipline'],
                 'loinc_code' => $entry['loinc_code'],
                 'loinc_display' => $entry['loinc_display'],
+                'modality' => $entry['modality'] ?? null,
+                'default_specimen_type' => $entry['default_specimen_type'] ?? null,
                 'is_active' => true,
                 'metadata' => [
                     'seed_source' => 'diagnostics_starter_catalog',
@@ -136,6 +150,219 @@ class DiagnosticStarterCatalogSeeder extends Seeder
                 ],
             ]
         );
+    }
+
+    protected function seedPanels(): void
+    {
+        $analyteProfiles = $this->ensureAnalyteComponentProfiles();
+
+        $panelDefinitions = [
+            'Full Blood Count (FBC)' => [
+                ['analyte' => 'hemoglobin', 'sequence' => 1, 'is_required' => true],
+                ['analyte' => 'pcv', 'sequence' => 2, 'is_required' => true],
+                ['analyte' => 'wbc', 'sequence' => 3, 'is_required' => true],
+                ['analyte' => 'platelets', 'sequence' => 4, 'is_required' => true],
+            ],
+            'Lipid Profile' => [
+                ['analyte' => 'total_cholesterol', 'sequence' => 1, 'is_required' => true],
+                ['analyte' => 'hdl', 'sequence' => 2, 'is_required' => true],
+                ['analyte' => 'ldl', 'sequence' => 3, 'is_required' => true],
+                ['analyte' => 'triglycerides', 'sequence' => 4, 'is_required' => true],
+            ],
+            'Liver Function Test' => [
+                ['analyte' => 'alt', 'sequence' => 1, 'is_required' => true],
+                ['analyte' => 'ast', 'sequence' => 2, 'is_required' => true],
+                ['analyte' => 'alp', 'sequence' => 3, 'is_required' => true],
+                ['analyte' => 'bilirubin_total', 'sequence' => 4, 'is_required' => true],
+            ],
+        ];
+
+        foreach ($panelDefinitions as $serviceName => $items) {
+            $profile = $this->findProfileByServiceName($serviceName);
+
+            if ($profile === null) {
+                continue;
+            }
+
+            $panel = $profile->ensurePanel();
+
+            foreach ($items as $item) {
+                $childProfile = $analyteProfiles[$item['analyte']] ?? null;
+
+                if ($childProfile === null) {
+                    continue;
+                }
+
+                DiagnosticPanelItem::query()->updateOrCreate(
+                    [
+                        'panel_id' => $panel->id,
+                        'child_profile_id' => $childProfile->id,
+                    ],
+                    [
+                        'sequence' => $item['sequence'],
+                        'is_required' => $item['is_required'],
+                    ]
+                );
+            }
+        }
+    }
+
+    /**
+     * @return array<string, DiagnosticServiceProfile>
+     */
+    protected function ensureAnalyteComponentProfiles(): array
+    {
+        $category = $this->ensureCategory(
+            code: 'LAB',
+            name: 'Laboratory',
+            description: 'Blood tests, urinalysis, and diagnostic lab services',
+            sortOrder: 3,
+        );
+
+        $analytes = [
+            'hemoglobin' => ['name' => 'Hemoglobin', 'loinc_code' => '718-7', 'loinc_display' => 'Hemoglobin [Mass/volume] in Blood'],
+            'pcv' => ['name' => 'PCV / Hematocrit', 'loinc_code' => '4544-3', 'loinc_display' => 'Hematocrit [Volume Fraction] of Blood'],
+            'wbc' => ['name' => 'White Blood Cells', 'loinc_code' => '6690-2', 'loinc_display' => 'Leukocytes [#/volume] in Blood'],
+            'platelets' => ['name' => 'Platelets', 'loinc_code' => '777-3', 'loinc_display' => 'Platelets [#/volume] in Blood'],
+            'total_cholesterol' => ['name' => 'Total Cholesterol', 'loinc_code' => '2093-3', 'loinc_display' => 'Cholesterol [Mass/volume] in Serum or Plasma'],
+            'hdl' => ['name' => 'HDL Cholesterol', 'loinc_code' => '2085-9', 'loinc_display' => 'Cholesterol in HDL [Mass/volume] in Serum or Plasma'],
+            'ldl' => ['name' => 'LDL Cholesterol', 'loinc_code' => '13457-7', 'loinc_display' => 'Cholesterol in LDL [Mass/volume] in Serum or Plasma'],
+            'triglycerides' => ['name' => 'Triglycerides', 'loinc_code' => '2571-8', 'loinc_display' => 'Triglyceride [Mass/volume] in Serum or Plasma'],
+            'alt' => ['name' => 'ALT', 'loinc_code' => '1742-6', 'loinc_display' => 'Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma'],
+            'ast' => ['name' => 'AST', 'loinc_code' => '1920-8', 'loinc_display' => 'Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma'],
+            'alp' => ['name' => 'ALP', 'loinc_code' => '6768-6', 'loinc_display' => 'Alkaline phosphatase [Enzymatic activity/volume] in Serum or Plasma'],
+            'bilirubin_total' => ['name' => 'Total Bilirubin', 'loinc_code' => '1975-2', 'loinc_display' => 'Bilirubin.total [Mass/volume] in Serum or Plasma'],
+        ];
+
+        $profiles = [];
+
+        foreach ($analytes as $key => $analyte) {
+            $service = $this->findOrCreateService($category, [
+                'name' => $analyte['name'],
+                'description' => "Analyte component: {$analyte['name']}",
+                'discipline' => 'lab',
+                'category_code' => 'LAB',
+                'loinc_code' => $analyte['loinc_code'],
+                'loinc_display' => $analyte['loinc_display'],
+                'service_defaults' => [
+                    'price' => 0.00,
+                    'is_billable' => false,
+                    'is_active' => false,
+                    'metadata' => [
+                        'seed_source' => 'diagnostics_starter_catalog',
+                        'component_only' => true,
+                    ],
+                ],
+                'template' => [
+                    'name' => "{$analyte['name']} Component Template",
+                    'fields' => [
+                        [
+                            'field_key' => $key,
+                            'label' => $analyte['name'],
+                            'value_type' => 'numeric',
+                            'observation_code' => $analyte['loinc_code'],
+                            'observation_name' => $analyte['loinc_display'],
+                        ],
+                    ],
+                ],
+            ]);
+
+            $profiles[$key] = $this->ensureProfile($service, [
+                'discipline' => 'lab',
+                'loinc_code' => $analyte['loinc_code'],
+                'loinc_display' => $analyte['loinc_display'],
+                'default_specimen_type' => 'blood',
+            ]);
+        }
+
+        return $profiles;
+    }
+
+    protected function seedStarterReferenceRanges(): void
+    {
+        $hemoglobin = $this->findProfileByServiceName('Hemoglobin');
+        $wbc = $this->findProfileByServiceName('White Blood Cells');
+        $glucose = $this->findProfileByServiceName('Blood Glucose');
+
+        if ($hemoglobin !== null) {
+            $this->ensureReferenceRange($hemoglobin->id, [
+                'gender' => 'male',
+                'age_min_months' => 216,
+                'min_value' => 13.5,
+                'max_value' => 17.5,
+                'units' => 'g/dL',
+                'critical_low' => 7.0,
+                'critical_high' => 20.0,
+            ]);
+            $this->ensureReferenceRange($hemoglobin->id, [
+                'gender' => 'female',
+                'age_min_months' => 216,
+                'min_value' => 12.0,
+                'max_value' => 15.5,
+                'units' => 'g/dL',
+                'critical_low' => 7.0,
+                'critical_high' => 20.0,
+            ]);
+        }
+
+        if ($wbc !== null) {
+            $this->ensureReferenceRange($wbc->id, [
+                'gender' => 'any',
+                'age_min_months' => 216,
+                'min_value' => 4.0,
+                'max_value' => 11.0,
+                'units' => '10*9/L',
+                'critical_low' => 2.0,
+                'critical_high' => 30.0,
+            ]);
+        }
+
+        if ($glucose !== null) {
+            $this->ensureReferenceRange($glucose->id, [
+                'gender' => 'any',
+                'age_min_months' => 216,
+                'min_value' => 70,
+                'max_value' => 99,
+                'units' => 'mg/dL',
+                'critical_low' => 40,
+                'critical_high' => 400,
+            ]);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function ensureReferenceRange(string $profileId, array $attributes): DiagnosticReferenceRange
+    {
+        return DiagnosticReferenceRange::query()->updateOrCreate(
+            [
+                'profile_id' => $profileId,
+                'gender' => $attributes['gender'],
+                'age_min_months' => $attributes['age_min_months'] ?? null,
+                'age_max_months' => $attributes['age_max_months'] ?? null,
+            ],
+            [
+                'min_value' => $attributes['min_value'] ?? null,
+                'max_value' => $attributes['max_value'] ?? null,
+                'units' => $attributes['units'] ?? null,
+                'critical_low' => $attributes['critical_low'] ?? null,
+                'critical_high' => $attributes['critical_high'] ?? null,
+            ]
+        );
+    }
+
+    protected function findProfileByServiceName(string $serviceName): ?DiagnosticServiceProfile
+    {
+        $service = Service::query()->where('name', $serviceName)->first();
+
+        if ($service === null) {
+            return null;
+        }
+
+        return DiagnosticServiceProfile::query()
+            ->where('service_id', $service->id)
+            ->first();
     }
 
     /**
@@ -154,10 +381,10 @@ class DiagnosticStarterCatalogSeeder extends Seeder
                 'template' => [
                     'name' => 'FBC Default Template',
                     'fields' => [
-                        ['field_key' => 'hemoglobin', 'label' => 'Hemoglobin', 'value_type' => 'numeric'],
-                        ['field_key' => 'pcv', 'label' => 'PCV / Hematocrit', 'value_type' => 'numeric'],
-                        ['field_key' => 'wbc', 'label' => 'White Blood Cells', 'value_type' => 'numeric'],
-                        ['field_key' => 'platelets', 'label' => 'Platelets', 'value_type' => 'numeric'],
+                        ['field_key' => 'hemoglobin', 'label' => 'Hemoglobin', 'value_type' => 'numeric', 'observation_code' => '718-7', 'default_units' => 'g/dL', 'is_required' => true, 'reference_range_low' => 12.0, 'reference_range_high' => 17.5],
+                        ['field_key' => 'pcv', 'label' => 'PCV / Hematocrit', 'value_type' => 'numeric', 'observation_code' => '4544-3', 'default_units' => '%', 'is_required' => true],
+                        ['field_key' => 'wbc', 'label' => 'White Blood Cells', 'value_type' => 'numeric', 'observation_code' => '6690-2', 'default_units' => '10*9/L', 'is_required' => true, 'reference_range_low' => 4.0, 'reference_range_high' => 11.0],
+                        ['field_key' => 'platelets', 'label' => 'Platelets', 'value_type' => 'numeric', 'observation_code' => '777-3', 'default_units' => '10*9/L', 'is_required' => true],
                     ],
                 ],
             ],
@@ -204,7 +431,7 @@ class DiagnosticStarterCatalogSeeder extends Seeder
                 'template' => [
                     'name' => 'Blood Glucose Default Template',
                     'fields' => [
-                        ['field_key' => 'glucose', 'label' => 'Glucose', 'value_type' => 'numeric'],
+                        ['field_key' => 'glucose', 'label' => 'Glucose', 'value_type' => 'numeric', 'observation_code' => '2345-7', 'default_units' => 'mg/dL', 'is_required' => true, 'reference_range_low' => 70, 'reference_range_high' => 99],
                         ['field_key' => 'sample_type', 'label' => 'Sample Type', 'value_type' => 'text'],
                         ['field_key' => 'fasting_status', 'label' => 'Fasting Status', 'value_type' => 'select'],
                     ],
@@ -450,6 +677,7 @@ class DiagnosticStarterCatalogSeeder extends Seeder
                 'description' => 'Standard chest X-ray examination.',
                 'discipline' => 'radiology',
                 'category_code' => 'RAD',
+                'modality' => 'XR',
                 'loinc_code' => '30745-4',
                 'loinc_display' => 'XR Chest 2 Views',
                 'template' => [
@@ -466,6 +694,7 @@ class DiagnosticStarterCatalogSeeder extends Seeder
                 'description' => 'Computed tomography of the head.',
                 'discipline' => 'radiology',
                 'category_code' => 'RAD',
+                'modality' => 'CT',
                 'loinc_code' => '24727-0',
                 'loinc_display' => 'CT Head WO contrast',
                 'template' => [
@@ -482,6 +711,7 @@ class DiagnosticStarterCatalogSeeder extends Seeder
                 'description' => 'Ultrasound examination of the abdomen.',
                 'discipline' => 'radiology',
                 'category_code' => 'RAD',
+                'modality' => 'US',
                 'loinc_code' => '30747-0',
                 'loinc_display' => 'US Abdomen complete',
                 'template' => [
@@ -499,6 +729,7 @@ class DiagnosticStarterCatalogSeeder extends Seeder
                 'description' => 'Heart rhythm and electrical activity test.',
                 'discipline' => 'radiology',
                 'category_code' => 'RAD',
+                'modality' => 'ECG',
                 'loinc_code' => '11524-6',
                 'loinc_display' => 'EKG study',
                 'template' => [
@@ -516,6 +747,7 @@ class DiagnosticStarterCatalogSeeder extends Seeder
                 'description' => 'Ultrasound assessment of the pelvis.',
                 'discipline' => 'radiology',
                 'category_code' => 'RAD',
+                'modality' => 'US',
                 'loinc_code' => '30746-2',
                 'loinc_display' => 'US Pelvis',
                 'service_defaults' => [
@@ -537,6 +769,7 @@ class DiagnosticStarterCatalogSeeder extends Seeder
                 'description' => 'Routine obstetric scan.',
                 'discipline' => 'radiology',
                 'category_code' => 'RAD',
+                'modality' => 'US',
                 'loinc_code' => '30748-8',
                 'loinc_display' => 'US Obstetric',
                 'service_defaults' => [
