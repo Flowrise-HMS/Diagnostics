@@ -2,6 +2,7 @@
 
 namespace Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Schemas;
 
+use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -44,8 +45,7 @@ class DiagnosticServiceProfileInfolist
                     ]),
                 Section::make('Metadata')
                     ->schema([
-                        TextEntry::make('metadata')
-                            ->formatStateUsing(fn (?array $state): string => $state ? json_encode($state, JSON_PRETTY_PRINT) : '[]'),
+                        KeyValueEntry::make('metadata'),
                     ]),
             ]);
     }
