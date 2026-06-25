@@ -14,6 +14,7 @@ use Modules\Diagnostics\Database\Factories\DiagnosticServiceProfileFactory;
 use Modules\Diagnostics\Enums\DiagnosticDiscipline;
 
 /**
+ * @property DiagnosticDiscipline|null $discipline
  * @method static static create(array<string, mixed> $attributes = [])
  */
 class DiagnosticServiceProfile extends BaseModel
