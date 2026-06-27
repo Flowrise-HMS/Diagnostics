@@ -6,6 +6,8 @@ use Illuminate\Support\Collection;
 use Modules\Clinical\Enums\TaskStatus;
 use Modules\Clinical\Models\ServiceRequest;
 use Modules\Clinical\Models\Task;
+use Modules\Core\Support\ClientIdentity;
+use Modules\Core\Support\ClientIdentityResolver;
 use Modules\Diagnostics\Enums\DiagnosticDiscipline;
 use Modules\Diagnostics\Enums\FulfillmentStatus;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
@@ -53,6 +55,7 @@ class DiagnosticLabResultPrintService
             'serviceName' => $fulfillment->requestItem?->service?->name ?? 'Laboratory Test',
             'requestNumber' => $serviceRequest?->request_number,
             'subject' => $serviceRequest ? $this->resolveSubject($serviceRequest) : [],
+            'client' => $serviceRequest?->clientIdentity() ?? ClientIdentityResolver::resolve(),
             'resultRows' => $this->resolveResultRows($fulfillment),
             'notes' => $latestTask?->notes,
             'performedBy' => $latestTask?->performedBy?->name,
@@ -69,29 +72,48 @@ class DiagnosticLabResultPrintService
      */
     protected function resolveSubject(ServiceRequest $serviceRequest): array
     {
-        if ($serviceRequest->patient_id !== null) {
+        $client = $serviceRequest->clientIdentity();
+
+        return $this->subjectArrayFromClient($client, $serviceRequest);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function subjectArrayFromClient(ClientIdentity $client, ServiceRequest $serviceRequest): array
+    {
+        if ($client->isPatient()) {
             $patient = $serviceRequest->patient;
 
             return [
                 'type' => 'patient',
-                'name' => $patient?->full_name ?? 'Unknown Patient',
-                'identifier_label' => 'MRN',
-                'identifier' => $patient?->mrn,
+                'name' => $client->name,
+                'identifier_label' => $client->identifierLabel,
+                'identifier' => $client->identifier,
                 'age' => $patient?->age,
                 'gender' => $patient?->gender?->getLabel(),
                 'phone' => $patient?->phone,
             ];
         }
 
+        if ($client->isGuest()) {
+            return [
+                'type' => 'guest',
+                'name' => $client->name,
+                'identifier_label' => $client->identifierLabel,
+                'identifier' => $client->identifier,
+                'age' => null,
+                'gender' => null,
+                'phone' => $client->phone,
+                'email' => $client->email,
+            ];
+        }
+
         return [
-            'type' => 'guest',
-            'name' => $serviceRequest->guest_name ?? 'Guest',
-            'identifier_label' => 'Phone',
-            'identifier' => $serviceRequest->guest_phone,
-            'age' => null,
-            'gender' => null,
-            'phone' => $serviceRequest->guest_phone,
-            'email' => $serviceRequest->guest_email,
+            'type' => 'unknown',
+            'name' => $client->name,
+            'identifier_label' => null,
+            'identifier' => null,
         ];
     }
 

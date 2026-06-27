@@ -22,6 +22,7 @@ use Modules\Diagnostics\Filament\Actions\PrintLabResultAction;
 use Modules\Diagnostics\Filament\Actions\RecordStructuredResultsAction;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\DiagnosticFulfillmentResource;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
+use Modules\Core\Filament\Support\ClientIdentityColumn;
 
 class DiagnosticFulfillmentsTable
 {
@@ -39,10 +40,9 @@ class DiagnosticFulfillmentsTable
                     ->label('Service')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('requestItem.serviceRequest.patient.full_name')
-                    ->label('Patient')
-                    ->state(fn (DiagnosticFulfillment $record): string => $record->requestItem?->serviceRequest?->patient?->full_name ?? $record->requestItem?->serviceRequest?->guest_name ?? 'Guest')
-                    ->searchable(),
+                ClientIdentityColumn::make(
+                    resolve: fn (DiagnosticFulfillment $record) => $record->requestItem?->serviceRequest?->clientIdentity(),
+                ),
                 TextColumn::make('accession_number')
                     ->label('Accession')
                     ->searchable()

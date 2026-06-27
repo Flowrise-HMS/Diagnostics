@@ -168,8 +168,8 @@
 
         <div class="grid">
             <div>
-                <span class="label">{{ ($subject['type'] ?? 'patient') === 'guest' ? 'Guest' : 'Patient' }}</span>
-                <strong>{{ $subject['name'] ?? '—' }}</strong>
+                <span class="label">{{ __('Client') }}</span>
+                <strong>{{ $client->name ?? ($subject['name'] ?? '—') }}</strong>
             </div>
             <div>
                 <span class="label">Test</span>

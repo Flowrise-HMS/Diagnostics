@@ -23,9 +23,9 @@ class DiagnosticFulfillmentInfolist
                             ->label('Service'),
                         TextEntry::make('requestItem.service.code')
                             ->label('Service Code'),
-                        TextEntry::make('requestItem.serviceRequest.patient.full_name')
-                            ->label('Patient')
-                            ->placeholder(fn (DiagnosticFulfillment $record): string => $record->requestItem?->serviceRequest?->guest_name ?? 'Guest'),
+                        TextEntry::make('client')
+                            ->label(__('Client'))
+                            ->state(fn (DiagnosticFulfillment $record): string => $record->requestItem?->serviceRequest?->clientIdentity()->displayWithIdentifier() ?? 'N/A'),
                     ]),
 
                 Section::make('Fulfillment')
