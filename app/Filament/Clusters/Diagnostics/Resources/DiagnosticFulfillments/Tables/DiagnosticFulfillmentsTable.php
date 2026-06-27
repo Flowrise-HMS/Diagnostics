@@ -15,6 +15,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Modules\Core\Filament\Support\ClientIdentityColumn;
 use Modules\Diagnostics\Enums\DiagnosticDiscipline;
 use Modules\Diagnostics\Enums\FulfillmentStatus;
 use Modules\Diagnostics\Enums\ReportVersionStatus;
@@ -22,7 +23,6 @@ use Modules\Diagnostics\Filament\Actions\PrintLabResultAction;
 use Modules\Diagnostics\Filament\Actions\RecordStructuredResultsAction;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\DiagnosticFulfillmentResource;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
-use Modules\Core\Filament\Support\ClientIdentityColumn;
 
 class DiagnosticFulfillmentsTable
 {
