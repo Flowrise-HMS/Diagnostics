@@ -168,7 +168,7 @@
 
         <div class="grid">
             <div>
-                <span class="label">{{ __('Client') }}</span>
+                <span class="label">{{ $client->isGuest() ? __('Guest') : __('Client') }}</span>
                 <strong>{{ $client->name ?? ($subject['name'] ?? '—') }}</strong>
             </div>
             <div>
