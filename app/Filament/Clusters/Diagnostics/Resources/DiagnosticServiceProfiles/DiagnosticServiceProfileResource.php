@@ -27,7 +27,7 @@ class DiagnosticServiceProfileResource extends Resource
 
     protected static ?string $cluster = DiagnosticsCluster::class;
 
-    protected static ?string $recordTitleAttribute = 'title';
+    protected static ?string $recordTitleAttribute = 'discipline';
 
     protected static ?string $icon = 'heroicon-o-beaker';
 
