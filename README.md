@@ -27,7 +27,7 @@ What is available:
 Explicitly deferred (global interoperability — last across all modules):
 
 - HL7 message log / MLLP / LIS orchestration
-- FHIR export transformers (`DiagnosticReport`, `Specimen`, `ImagingStudy`)
+- FHIR export transformers (`DiagnosticReport`, `Specimen`, `ImagingStudy`) — `Observation` read/search is exposed via the FHIR module
 
 Use this README as both:
 
@@ -519,7 +519,7 @@ This is the central mental model to preserve whenever the module evolves.
 **Explicitly deferred (global interoperability — last across all modules):**
 
 - HL7 message log / MLLP / LIS (`diagnostic_hl7_messages` migration slot reserved)
-- FHIR export transformers (`DiagnosticReport`, `Specimen`, `ImagingStudy`)
+- FHIR export transformers (`DiagnosticReport`, `Specimen`, `ImagingStudy`) — `Observation` read/search is exposed via the FHIR module
 - Heavy RIS/IHE procedure hierarchy
 - Mandatory transcription of every uploaded external result into structured fields
 
