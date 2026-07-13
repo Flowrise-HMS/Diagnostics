@@ -3,7 +3,6 @@
 namespace Modules\Diagnostics\Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Modules\Core\Enums\CoverageType;
 use Modules\Core\Models\Service;
 use Modules\Core\Models\ServiceCategory;
 use Modules\Diagnostics\Models\DiagnosticPanelItem;
@@ -110,9 +109,6 @@ class DiagnosticStarterCatalogSeeder extends Seeder
         $defaults = array_merge([
             'description' => $entry['description'],
             'price' => 50.00,
-            'insurance_price' => 0.00,
-            'is_insurance_covered' => true,
-            'coverage_type' => CoverageType::NHIS,
             'requires_payment_before' => true,
             'requires_prescription' => true,
             'is_billable' => true,
@@ -795,7 +791,6 @@ class DiagnosticStarterCatalogSeeder extends Seeder
                 'loinc_display' => 'Pathology study report',
                 'service_defaults' => [
                     'price' => 150.00,
-                    'insurance_price' => 50.00,
                     'estimated_duration_minutes' => 30,
                 ],
                 'template' => [
@@ -817,7 +812,6 @@ class DiagnosticStarterCatalogSeeder extends Seeder
                 'loinc_display' => 'Cytology report',
                 'service_defaults' => [
                     'price' => 120.00,
-                    'insurance_price' => 40.00,
                     'estimated_duration_minutes' => 25,
                 ],
                 'template' => [
@@ -838,7 +832,6 @@ class DiagnosticStarterCatalogSeeder extends Seeder
                 'loinc_display' => 'Pathology report biopsy',
                 'service_defaults' => [
                     'price' => 180.00,
-                    'insurance_price' => 60.00,
                     'estimated_duration_minutes' => 30,
                 ],
                 'template' => [
