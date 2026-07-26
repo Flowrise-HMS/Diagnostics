@@ -11,6 +11,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Modules\Core\Support\SuperAdmin;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticResultTemplates\DiagnosticResultTemplateResource;
 
 class DiagnosticResultTemplatesTable
@@ -58,6 +59,7 @@ class DiagnosticResultTemplatesTable
                 EditAction::make(),
                 DeleteAction::make(),
                 Action::make('activities')
+                    ->visible(fn (): bool => SuperAdmin::check())
                     ->label('Activities')
                     ->icon('heroicon-o-bell-alert')
                     ->url(fn ($record) => DiagnosticResultTemplateResource::getUrl('activities', ['record' => $record])),

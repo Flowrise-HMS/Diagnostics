@@ -16,6 +16,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Modules\Core\Filament\Support\ClientIdentityColumn;
+use Modules\Core\Support\SuperAdmin;
 use Modules\Diagnostics\Enums\DiagnosticDiscipline;
 use Modules\Diagnostics\Enums\FulfillmentStatus;
 use Modules\Diagnostics\Enums\ReportVersionStatus;
@@ -228,6 +229,7 @@ class DiagnosticFulfillmentsTable
                     EditAction::make(),
                     DeleteAction::make(),
                     Action::make('activities')
+                        ->visible(fn (): bool => SuperAdmin::check())
                         ->label('Activities')
                         ->icon('heroicon-o-bell-alert')
                         ->url(fn ($record) => DiagnosticFulfillmentResource::getUrl('activities', ['record' => $record])),

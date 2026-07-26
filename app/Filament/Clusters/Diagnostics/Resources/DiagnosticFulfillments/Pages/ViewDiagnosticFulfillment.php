@@ -5,6 +5,7 @@ namespace Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\Diagnostic
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
+use Modules\Core\Support\SuperAdmin;
 use Modules\Diagnostics\Filament\Actions\PrintLabResultAction;
 use Modules\Diagnostics\Filament\Actions\RecordStructuredResultsAction;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\DiagnosticFulfillmentResource;
@@ -21,6 +22,7 @@ class ViewDiagnosticFulfillment extends ViewRecord
             PrintLabResultAction::make(fn (): DiagnosticFulfillment => $this->getRecord()),
             EditAction::make(),
             Action::make('activities')
+                ->visible(fn (): bool => SuperAdmin::check())
                 ->label('Activities')
                 ->icon('heroicon-o-bell-alert')
                 ->url(fn () => DiagnosticFulfillmentResource::getUrl('activities', ['record' => $this->getRecord()])),
