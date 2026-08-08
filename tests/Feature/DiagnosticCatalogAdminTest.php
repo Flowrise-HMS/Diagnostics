@@ -26,6 +26,18 @@ class DiagnosticCatalogAdminTest extends TestCase
         $this->assertContains(DiagnosticReferenceRangesRelationManager::class, $relations);
     }
 
+    public function test_service_profile_record_title_is_a_string(): void
+    {
+        $this->migrateModules();
+
+        $profile = DiagnosticServiceProfile::factory()->create();
+
+        $title = DiagnosticServiceProfileResource::getRecordTitle($profile);
+
+        $this->assertIsString($title);
+        $this->assertSame($profile->title, $title);
+    }
+
     public function test_service_profile_can_ensure_panel_and_list_panel_items(): void
     {
         $this->migrateModules();

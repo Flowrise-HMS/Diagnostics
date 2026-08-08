@@ -5,6 +5,8 @@ namespace Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\Diagnostic
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Database\Eloquent\Model;
 use Modules\Core\Enums\NavigationGroup;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\DiagnosticsCluster;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Pages\CreateDiagnosticServiceProfile;
@@ -30,6 +32,14 @@ class DiagnosticServiceProfileResource extends Resource
     protected static ?string $recordTitleAttribute = 'discipline';
 
     protected static ?string $icon = 'heroicon-o-beaker';
+
+    /**
+     * The discipline attribute is cast to an enum, so it cannot be returned as a record title directly.
+     */
+    public static function getRecordTitle(?Model $record): string|Htmlable|null
+    {
+        return $record?->title ?? static::getModelLabel();
+    }
 
     public static function form(Schema $schema): Schema
     {

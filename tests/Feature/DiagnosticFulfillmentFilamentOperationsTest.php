@@ -31,6 +31,21 @@ class DiagnosticFulfillmentFilamentOperationsTest extends TestCase
         $this->assertContains(DiagnosticAllocationsRelationManager::class, $relations);
     }
 
+    public function test_fulfillment_record_title_is_a_string_and_not_the_discipline_enum(): void
+    {
+        $this->migrateModules();
+
+        $fulfillment = DiagnosticFulfillment::factory()->create([
+            'discipline' => DiagnosticDiscipline::RADIOLOGY,
+            'accession_number' => 'ACC-TITLE-001',
+        ]);
+
+        $title = DiagnosticFulfillmentResource::getRecordTitle($fulfillment);
+
+        $this->assertIsString($title);
+        $this->assertSame('ACC-TITLE-001', $title);
+    }
+
     public function test_discipline_helpers_gate_specimen_and_scheduling_workflows(): void
     {
         $this->assertTrue(DiagnosticDiscipline::LAB->supportsSpecimenWorkflow());
