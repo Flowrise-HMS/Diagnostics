@@ -33,12 +33,13 @@ class DiagnosticFulfillmentResource extends Resource
 
     protected static ?string $cluster = DiagnosticsCluster::class;
 
-    protected static ?string $recordTitleAttribute = 'discipline';
+    protected static ?string $recordTitleAttribute = 'accession_number';
 
     protected static ?string $icon = 'heroicon-o-clipboard-document-check';
 
     /**
-     * The discipline attribute is cast to an enum, so it cannot be returned as a record title directly.
+     * Keep the title attribute pointing at a plain string column: Filament reads it directly for
+     * record titles and global search, and an enum-cast column breaks the expected return type.
      */
     public static function getRecordTitle(?Model $record): string|Htmlable|null
     {

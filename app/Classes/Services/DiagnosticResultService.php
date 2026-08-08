@@ -35,6 +35,8 @@ class DiagnosticResultService
 
     public function getContextInfo(RequestItem $item): array
     {
+        $item->loadMissing(['serviceRequest.orderedBy', 'service.category']);
+
         $serviceRequest = $item->serviceRequest;
         $service = $item->service;
         $orderedBy = $serviceRequest?->orderedBy;
