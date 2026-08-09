@@ -15,6 +15,21 @@ use Modules\Diagnostics\Enums\AbnormalFlag;
 use Modules\Diagnostics\Enums\ObservationStatus;
 
 /**
+ * @property string|null $value_numeric
+ * @property string|null $value_text
+ * @property string|null $value_coded
+ * @property bool|null $value_boolean
+ * @property string|null $value_quantity_value
+ * @property string|null $value_quantity_unit
+ * @property string|null $value_range_low
+ * @property string|null $value_range_high
+ * @property string|null $data_absent_reason
+ * @property string|null $units
+ * @property string|null $reference_range_min
+ * @property string|null $reference_range_max
+ * @property string|null $reference_range_text
+ * @property AbnormalFlag|null $abnormal_flag
+ *
  * @method static static create(array<string, mixed> $attributes = [])
  */
 class DiagnosticObservation extends BaseModel

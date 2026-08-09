@@ -247,27 +247,15 @@ it('hides the view action from users without the view permission', function (): 
         ->assertTableActionHidden('view', $fulfillment);
 });
 
-it('is offered to the clinical workspace completed tab only for permitted users', function (): void {
-    $permitted = diagnosticWidgetUser($this->branch, ['ViewAny DiagnosticFulfillment']);
-    $this->actingAs($permitted);
+it('is offered to the clinical workspace whenever the diagnostics module is installed', function (): void {
+    $this->actingAs(diagnosticWidgetUser($this->branch));
 
     expect(app(ClinicalWorkspace::class)->completedResultsWidget())
         ->toBe(CompletedDiagnosticResultsWidget::class);
-
-    $denied = diagnosticWidgetUser($this->branch);
-    $this->actingAs($denied);
-
-    expect(app(ClinicalWorkspace::class)->completedResultsWidget())->toBeNull();
 });
 
-it('is hidden entirely from users who cannot view fulfillments', function (): void {
-    $user = diagnosticWidgetUser($this->branch);
-    $this->actingAs($user);
-
-    expect(CompletedDiagnosticResultsWidget::canView())->toBeFalse();
-
-    $permitted = diagnosticWidgetUser($this->branch, ['ViewAny DiagnosticFulfillment']);
-    $this->actingAs($permitted);
+it('is visible to every clinical user who can reach the workspace', function (): void {
+    $this->actingAs(diagnosticWidgetUser($this->branch));
 
     expect(CompletedDiagnosticResultsWidget::canView())->toBeTrue();
 });

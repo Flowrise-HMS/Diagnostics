@@ -14,6 +14,7 @@ return [
     ],
 
     'permissions' => [
+        'manage_diagnostics_settings' => 'ManageDiagnosticsSettings',
         'assign_diagnostic_fulfillment' => 'Assign Diagnostic Fulfillment',
         'collect_diagnostic_specimen' => 'Collect Diagnostic Specimen',
         'upload_diagnostic_result_file' => 'Upload Diagnostic Result File',

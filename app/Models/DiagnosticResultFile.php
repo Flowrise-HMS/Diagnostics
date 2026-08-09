@@ -12,6 +12,8 @@ use Modules\Diagnostics\Database\Factories\DiagnosticResultFileFactory;
 use Modules\Diagnostics\Enums\FileSourceType;
 
 /**
+ * @property string|null $file_path
+ *
  * @method static static create(array<string, mixed> $attributes = [])
  */
 class DiagnosticResultFile extends BaseModel

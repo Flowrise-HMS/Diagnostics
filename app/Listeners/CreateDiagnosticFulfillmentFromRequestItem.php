@@ -5,7 +5,6 @@ namespace Modules\Diagnostics\Listeners;
 use Illuminate\Support\Facades\DB;
 use Modules\Clinical\Events\RequestItemCreated;
 use Modules\Clinical\Models\ServiceRequest;
-use Modules\Core\Settings\DiagnosticsSettings;
 use Modules\Core\Support\AppSettings;
 use Modules\Diagnostics\Classes\DiagnosticNumberGenerator;
 use Modules\Diagnostics\Enums\DiagnosticDiscipline;
@@ -13,6 +12,7 @@ use Modules\Diagnostics\Enums\FulfillmentStatus;
 use Modules\Diagnostics\Enums\StudyStatus;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
 use Modules\Diagnostics\Models\DiagnosticServiceProfile;
+use Modules\Diagnostics\Settings\DiagnosticsSettings;
 
 class CreateDiagnosticFulfillmentFromRequestItem
 {

@@ -9,11 +9,11 @@ use Modules\Diagnostics\Enums\FulfillmentStatus;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\Tables\DiagnosticFulfillmentsTable;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
 
-class CompletedDiagnosticResultsWidget extends BaseTableWidget
+class PendingDiagnosticFulfillmentsWidget extends BaseTableWidget
 {
     protected static bool $isDiscovered = false;
 
-    protected static ?string $heading = 'Completed Results';
+    protected static ?string $heading = 'Pending Diagnostics';
 
     protected int|string|array $columnSpan = 'full';
 
@@ -25,10 +25,23 @@ class CompletedDiagnosticResultsWidget extends BaseTableWidget
     #[Reactive]
     public ?string $encounterId = null;
 
+    /**
+     * @return list<FulfillmentStatus>
+     */
+    public static function activeStatuses(): array
+    {
+        return [
+            FulfillmentStatus::PENDING,
+            FulfillmentStatus::SCHEDULED,
+            FulfillmentStatus::COLLECTED,
+            FulfillmentStatus::IN_PROGRESS,
+        ];
+    }
+
     protected function getTableQuery(): Builder
     {
         return DiagnosticFulfillment::query()
-            ->where('status', FulfillmentStatus::COMPLETED)
+            ->whereIn('status', self::activeStatuses())
             ->when(
                 filled($this->patientId),
                 fn (Builder $query): Builder => $query->whereHas(
@@ -70,12 +83,12 @@ class CompletedDiagnosticResultsWidget extends BaseTableWidget
 
     protected function getTableEmptyStateHeading(): ?string
     {
-        return 'No completed results';
+        return 'No pending diagnostics';
     }
 
     protected function getTableEmptyStateDescription(): ?string
     {
-        return 'Results appear here once a diagnostic request has been fulfilled.';
+        return 'Open diagnostic requests for this patient will appear here until results are completed.';
     }
 
     protected function getTablePollingInterval(): ?string
