@@ -8,6 +8,9 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Modules\Clinical\Enums\TaskOutcome;
 use Modules\Clinical\Enums\TaskStatus;
 use Modules\Clinical\Models\RequestItem;
@@ -104,22 +107,19 @@ class DiagnosticResultService
             }
 
             if (! empty($data['result_files'])) {
+                $storedFileNames = (array) ($data['result_files_names'] ?? []);
+
                 foreach ((array) $data['result_files'] as $file) {
+                    $attributes = $this->resolveResultFileAttributes($file, $storedFileNames);
+
+                    if ($attributes === null) {
+                        continue;
+                    }
+
                     $fulfillment->resultFiles()->create([
+                        ...$attributes,
                         'branch_id' => $this->branchService->getDefaultBranchId(),
                         'report_version_id' => $reportVersion->id,
-                        'file_name' => $file instanceof UploadedFile
-                            ? $file->getClientOriginalName()
-                            : (is_string($file) ? basename($file) : 'file'),
-                        'file_path' => $file instanceof UploadedFile
-                            ? $file->store('diagnostics/results', 'public')
-                            : (is_string($file) ? $file : null),
-                        'mime_type' => $file instanceof UploadedFile
-                            ? $file->getMimeType()
-                            : null,
-                        'file_type' => $file instanceof UploadedFile
-                            ? $file->getClientOriginalExtension()
-                            : null,
                         'source' => FileSourceType::INTERNAL_ENTRY,
                         'uploaded_by' => $user->id,
                     ]);
@@ -128,6 +128,89 @@ class DiagnosticResultService
 
             $item->markAsFulfilled($user->id);
         });
+    }
+
+    /**
+     * Normalise one `result_files` entry into persistable columns.
+     *
+     * Entries arrive either as an upload that still needs storing, or as a path to a
+     * file the form component already stored. Anything else — most importantly an
+     * unresolved `livewire-file:` placeholder, which means the temporary upload was
+     * never promoted — is discarded rather than recorded as a bogus path.
+     *
+     * @param  array<string, string>  $storedFileNames  Original upload names keyed by stored path.
+     * @return array{file_name: string, file_path: string, mime_type: ?string, file_type: ?string, file_size: ?int}|null
+     */
+    protected function resolveResultFileAttributes(mixed $file, array $storedFileNames = []): ?array
+    {
+        $disk = $this->resultFilesDisk();
+
+        if ($file instanceof UploadedFile) {
+            $path = $file->store(config('diagnostics.result_files.directory'), $disk);
+
+            if ($path === false) {
+                Log::warning('Failed to store a diagnostic result file upload.', [
+                    'disk' => $disk,
+                    'original_name' => $file->getClientOriginalName(),
+                ]);
+
+                return null;
+            }
+
+            return [
+                'file_name' => $file->getClientOriginalName(),
+                'file_path' => $path,
+                'mime_type' => $file->getMimeType(),
+                'file_type' => $file->getClientOriginalExtension() ?: null,
+                'file_size' => $file->getSize() ?: null,
+            ];
+        }
+
+        if (! is_string($file) || blank($file)) {
+            return null;
+        }
+
+        if (Str::startsWith($file, ['livewire-file:', 'livewire-files:'])) {
+            Log::warning('Discarded an unresolved temporary upload for a diagnostic result file.', [
+                'value' => $file,
+            ]);
+
+            return null;
+        }
+
+        $directory = (string) config('diagnostics.result_files.directory');
+
+        if (Str::contains($file, '..') || ! Str::startsWith($file, $directory.'/')) {
+            Log::warning('Discarded a diagnostic result file path outside the results directory.', [
+                'path' => $file,
+            ]);
+
+            return null;
+        }
+
+        $storage = Storage::disk($disk);
+
+        if (! $storage->exists($file)) {
+            Log::warning('Discarded a diagnostic result file path that does not exist on disk.', [
+                'disk' => $disk,
+                'path' => $file,
+            ]);
+
+            return null;
+        }
+
+        return [
+            'file_name' => $storedFileNames[$file] ?? basename($file),
+            'file_path' => $file,
+            'mime_type' => $storage->mimeType($file) ?: null,
+            'file_type' => pathinfo($file, PATHINFO_EXTENSION) ?: null,
+            'file_size' => $storage->size($file) ?: null,
+        ];
+    }
+
+    protected function resultFilesDisk(): string
+    {
+        return (string) config('diagnostics.result_files.disk');
     }
 
     public function getProfile(RequestItem $item): ?DiagnosticServiceProfile
@@ -141,9 +224,12 @@ class DiagnosticResultService
 
     public function getTemplateFields(DiagnosticServiceProfile $profile): Collection
     {
+        $profile->loadMissing('defaultTemplate.fields');
+
         $template = $profile->defaultTemplate;
         if (! $template) {
             $template = $profile->templates()->where('is_active', true)->first();
+            $template?->loadMissing('fields');
         }
 
         return $template?->fields ?? collect();

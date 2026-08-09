@@ -15,6 +15,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Modules\Diagnostics\Enums\AbnormalFlag;
 use Modules\Diagnostics\Enums\ObservationStatus;
+use Modules\Diagnostics\Models\DiagnosticObservation;
 
 class DiagnosticObservationsRelationManager extends RelationManager
 {
@@ -65,16 +66,11 @@ class DiagnosticObservationsRelationManager extends RelationManager
                     ->searchable(),
                 TextColumn::make('display')
                     ->searchable(),
-                TextColumn::make('value_numeric')
+                TextColumn::make('value_display')
                     ->label('Value')
-                    ->formatStateUsing(fn ($record): string => (string) ($record->value_numeric ?? $record->value_text ?? $record->value_coded ?? '-')),
-                TextColumn::make('units')
                     ->placeholder('-'),
-                TextColumn::make('reference_range_min')
-                    ->label('Ref Low')
-                    ->placeholder('-'),
-                TextColumn::make('reference_range_max')
-                    ->label('Ref High')
+                TextColumn::make('reference_range_display')
+                    ->label('Reference range')
                     ->placeholder('-'),
                 TextColumn::make('abnormal_flag')
                     ->badge()
@@ -82,7 +78,7 @@ class DiagnosticObservationsRelationManager extends RelationManager
                 IconColumn::make('is_critical')
                     ->label('Critical')
                     ->boolean()
-                    ->state(fn ($record): bool => in_array($record->abnormal_flag, [AbnormalFlag::CRITICALLY_HIGH, AbnormalFlag::CRITICALLY_LOW], true)),
+                    ->state(fn (DiagnosticObservation $record): bool => $record->isCritical()),
                 TextColumn::make('status')
                     ->badge(),
             ])

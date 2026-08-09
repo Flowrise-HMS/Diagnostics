@@ -124,7 +124,7 @@ class DiagnosticResultServiceTest extends TestCase
 
     public function test_submit_links_uploaded_files_to_report_version(): void
     {
-        Storage::fake('public');
+        Storage::fake(config('diagnostics.result_files.disk'));
 
         $user = User::factory()->create();
         $service = Service::factory()->create();

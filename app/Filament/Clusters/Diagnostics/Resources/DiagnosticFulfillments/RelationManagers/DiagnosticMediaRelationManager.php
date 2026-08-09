@@ -52,7 +52,9 @@ class DiagnosticMediaRelationManager extends RelationManager
                     ->maxLength(255),
                 FileUpload::make('file_path')
                     ->label('File')
+                    ->disk(config('diagnostics.result_files.disk'))
                     ->directory('diagnostics/media')
+                    ->visibility('private')
                     ->required(),
                 TextInput::make('mime_type')
                     ->label('MIME Type'),

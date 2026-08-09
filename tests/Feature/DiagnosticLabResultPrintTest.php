@@ -3,6 +3,7 @@
 namespace Modules\Diagnostics\Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Modules\Clinical\Models\RequestItem;
 use Modules\Clinical\Models\ServiceRequest;
@@ -10,6 +11,7 @@ use Modules\Core\Models\Branch;
 use Modules\Core\Models\Service;
 use Modules\Diagnostics\Classes\Services\DiagnosticLabResultPrintService;
 use Modules\Diagnostics\Classes\Services\DiagnosticResultService;
+use Modules\Diagnostics\Filament\Actions\PrintLabResultAction;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
 use Modules\Diagnostics\Models\DiagnosticServiceProfile;
 use Modules\Patient\Models\Patient;
@@ -141,6 +143,132 @@ class DiagnosticLabResultPrintTest extends TestCase
         $this->assertFalse(app(DiagnosticLabResultPrintService::class)->canPrint($fulfillment));
     }
 
+    public function test_print_action_is_visible_on_table_row_for_authorized_user(): void
+    {
+        $user = $this->createUserWithViewPermission();
+        $fulfillment = $this->createPrintableLabFulfillment();
+
+        $action = PrintLabResultAction::make()->record($fulfillment);
+
+        $this->actingAs($user);
+
+        $this->assertTrue($action->isVisible());
+        $this->assertSame(
+            route('diagnostics.fulfillments.lab-result.print', ['fulfillment' => $fulfillment, 'auto' => 1]),
+            $action->getUrl(),
+        );
+    }
+
+    public function test_print_action_is_hidden_on_table_row_without_permission(): void
+    {
+        $user = User::factory()->create();
+        $fulfillment = $this->createPrintableLabFulfillment();
+
+        $action = PrintLabResultAction::make()->record($fulfillment);
+
+        $this->actingAs($user);
+
+        $this->assertFalse($action->isVisible());
+    }
+
+    public function test_print_action_is_hidden_on_table_row_for_unprintable_fulfillment(): void
+    {
+        $user = $this->createUserWithViewPermission();
+        $service = Service::factory()->create();
+        $item = RequestItem::factory()->forService($service)->create();
+
+        DiagnosticServiceProfile::create([
+            'service_id' => $service->id,
+            'discipline' => 'lab',
+            'is_active' => true,
+        ]);
+
+        $fulfillment = DiagnosticFulfillment::factory()
+            ->forRequestItem($item, 'lab')
+            ->create(['status' => 'pending']);
+
+        $action = PrintLabResultAction::make()->record($fulfillment);
+
+        $this->actingAs($user);
+
+        $this->assertFalse($action->isVisible());
+    }
+
+    public function test_print_action_header_context_remains_visible(): void
+    {
+        $user = $this->createUserWithViewPermission();
+        $fulfillment = $this->createPrintableLabFulfillment();
+
+        $action = PrintLabResultAction::make(fn (): DiagnosticFulfillment => $fulfillment);
+
+        $this->actingAs($user);
+
+        $this->assertTrue($action->isVisible());
+        $this->assertSame(
+            route('diagnostics.fulfillments.lab-result.print', ['fulfillment' => $fulfillment, 'auto' => 1]),
+            $action->getUrl(),
+        );
+    }
+
+    public function test_can_print_does_not_lazy_load_report_version_observations(): void
+    {
+        $user = $this->createUserWithViewPermission();
+
+        $first = $this->createPrintableLabFulfillment('FBC One');
+        $second = $this->createPrintableLabFulfillment('FBC Two');
+
+        $printService = app(DiagnosticLabResultPrintService::class);
+
+        Model::preventLazyLoading();
+
+        try {
+            $fulfillments = DiagnosticFulfillment::query()
+                ->whereIn('id', [$first->id, $second->id])
+                ->with('latestReportVersion')
+                ->get();
+
+            $this->assertCount(2, $fulfillments);
+
+            foreach ($fulfillments as $fulfillment) {
+                $this->assertTrue($printService->canPrint($fulfillment));
+            }
+        } finally {
+            Model::preventLazyLoading(false);
+        }
+    }
+
+    public function test_can_print_works_when_no_relations_are_eager_loaded(): void
+    {
+        Model::preventLazyLoading();
+
+        $first = $this->createPrintableLabFulfillment('FBC Three');
+        $second = $this->createPrintableLabFulfillment('FBC Four');
+
+        $fulfillments = DiagnosticFulfillment::query()
+            ->whereIn('id', [$first->id, $second->id])
+            ->get();
+
+        $this->assertCount(2, $fulfillments);
+
+        $printService = app(DiagnosticLabResultPrintService::class);
+
+        foreach ($fulfillments as $fulfillment) {
+            $this->assertTrue($fulfillment->preventsLazyLoading);
+            $this->assertTrue($printService->canPrint($fulfillment));
+        }
+    }
+
+    public function test_print_action_is_hidden_when_no_record_can_be_resolved(): void
+    {
+        $user = $this->createUserWithViewPermission();
+
+        $action = PrintLabResultAction::make();
+
+        $this->actingAs($user);
+
+        $this->assertFalse($action->isVisible());
+    }
+
     protected function createUserWithViewPermission(): User
     {
         $user = User::factory()->create();
@@ -149,5 +277,34 @@ class DiagnosticLabResultPrintTest extends TestCase
         $user->givePermissionTo('print_diagnostic_lab_result');
 
         return $user;
+    }
+
+    protected function createPrintableLabFulfillment(string $serviceName = 'Full Blood Count'): DiagnosticFulfillment
+    {
+        $user = $this->createUserWithViewPermission();
+        $service = Service::factory()->create(['name' => $serviceName]);
+
+        DiagnosticServiceProfile::create([
+            'service_id' => $service->id,
+            'discipline' => 'lab',
+            'is_active' => true,
+        ]);
+
+        $patient = Patient::factory()->create([
+            'branch_id' => Branch::factory()->create()->id,
+        ]);
+        $request = ServiceRequest::factory()->forPatient($patient)->create();
+        $item = RequestItem::factory()->forRequest($request)->forService($service)->create();
+
+        app(DiagnosticResultService::class)->submit($item, [
+            'results' => [
+                ['key' => 'hemoglobin', 'value' => '13.5 g/dL'],
+            ],
+            'notes' => 'Within normal limits',
+        ], $user);
+
+        return DiagnosticFulfillment::query()
+            ->where('request_item_id', $item->id)
+            ->firstOrFail();
     }
 }

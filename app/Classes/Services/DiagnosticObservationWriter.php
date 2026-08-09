@@ -31,6 +31,7 @@ class DiagnosticObservationWriter
         $profile->loadMissing([
             'panel.items.childProfile.service',
             'panel.items.childProfile.referenceRanges',
+            'panel.items.childProfile.defaultTemplate.fields',
             'referenceRanges',
             'defaultTemplate.fields',
             'templates.fields',
@@ -528,10 +529,13 @@ class DiagnosticObservationWriter
      */
     protected function getTemplateFields(DiagnosticServiceProfile $profile): Collection
     {
+        $profile->loadMissing('defaultTemplate.fields');
+
         $template = $profile->defaultTemplate;
 
         if ($template === null) {
             $template = $profile->templates()->where('is_active', true)->first();
+            $template?->loadMissing('fields');
         }
 
         return $template?->fields ?? collect();

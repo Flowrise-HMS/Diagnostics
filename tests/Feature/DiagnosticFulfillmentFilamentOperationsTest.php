@@ -2,6 +2,7 @@
 
 namespace Modules\Diagnostics\Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Modules\Diagnostics\Enums\DiagnosticDiscipline;
 use Modules\Diagnostics\Filament\Actions\RecordStructuredResultsAction;
@@ -14,6 +15,7 @@ use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfil
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\RelationManagers\DiagnosticStudiesRelationManager;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
 use Modules\Diagnostics\Models\DiagnosticReportVersion;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class DiagnosticFulfillmentFilamentOperationsTest extends TestCase
@@ -60,6 +62,71 @@ class DiagnosticFulfillmentFilamentOperationsTest extends TestCase
     {
         $this->assertTrue(class_exists(RecordStructuredResultsAction::class));
         $this->assertSame('recordStructuredResults', RecordStructuredResultsAction::make()->getName());
+    }
+
+    public function test_record_structured_results_action_is_visible_on_table_row_for_authorized_user(): void
+    {
+        $this->migrateModules();
+
+        $user = User::factory()->create();
+        Permission::findOrCreate('record_structured_diagnostic_observations', 'web');
+        $user->givePermissionTo('record_structured_diagnostic_observations');
+
+        $fulfillment = DiagnosticFulfillment::factory()->create();
+
+        $action = RecordStructuredResultsAction::make()->record($fulfillment);
+
+        $this->actingAs($user);
+
+        $this->assertTrue($action->isVisible());
+    }
+
+    public function test_record_structured_results_action_is_hidden_on_table_row_without_permission(): void
+    {
+        $this->migrateModules();
+
+        $user = User::factory()->create();
+        $fulfillment = DiagnosticFulfillment::factory()->create();
+
+        $action = RecordStructuredResultsAction::make()->record($fulfillment);
+
+        $this->actingAs($user);
+
+        $this->assertFalse($action->isVisible());
+    }
+
+    public function test_record_structured_results_action_is_hidden_on_table_row_without_request_item(): void
+    {
+        $this->migrateModules();
+
+        $user = User::factory()->create();
+        Permission::findOrCreate('record_structured_diagnostic_observations', 'web');
+        $user->givePermissionTo('record_structured_diagnostic_observations');
+
+        $fulfillment = new DiagnosticFulfillment;
+
+        $action = RecordStructuredResultsAction::make()->record($fulfillment);
+
+        $this->actingAs($user);
+
+        $this->assertFalse($action->isVisible());
+    }
+
+    public function test_record_structured_results_action_header_context_remains_visible(): void
+    {
+        $this->migrateModules();
+
+        $user = User::factory()->create();
+        Permission::findOrCreate('record_structured_diagnostic_observations', 'web');
+        $user->givePermissionTo('record_structured_diagnostic_observations');
+
+        $fulfillment = DiagnosticFulfillment::factory()->create();
+
+        $action = RecordStructuredResultsAction::make(fn (): DiagnosticFulfillment => $fulfillment);
+
+        $this->actingAs($user);
+
+        $this->assertTrue($action->isVisible());
     }
 
     public function test_relation_managers_are_discipline_aware(): void

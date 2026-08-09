@@ -20,10 +20,8 @@ class PrintLabResultAction
             ->label('Print Lab Result')
             ->icon('heroicon-o-printer')
             ->color('gray')
-            ->url(function (mixed ...$args) use ($resolveRecord): string {
-                $record = $resolveRecord !== null
-                    ? $resolveRecord()
-                    : ($args[0] ?? null);
+            ->url(function (?DiagnosticFulfillment $record = null) use ($resolveRecord): string {
+                $record ??= $resolveRecord?->__invoke();
 
                 return route('diagnostics.fulfillments.lab-result.print', [
                     'fulfillment' => $record,
@@ -31,23 +29,24 @@ class PrintLabResultAction
                 ]);
             })
             ->openUrlInNewTab()
-            ->visible(function (mixed ...$args) use ($resolveRecord, $printService): bool {
+            ->visible(function (?DiagnosticFulfillment $record = null) use ($resolveRecord, $printService): bool {
                 $user = auth()->user();
 
                 if ($user === null) {
                     return false;
                 }
 
-                $record = $resolveRecord !== null
-                    ? $resolveRecord()
-                    : ($args[0] ?? null);
+                $record ??= $resolveRecord?->__invoke();
 
-                if (! $record instanceof DiagnosticFulfillment) {
+                if ($record === null) {
                     return false;
                 }
 
-                return $user->can('printLabResult', $record)
-                    && $printService->canPrint($record);
+                if (! $user->can('printLabResult', $record)) {
+                    return false;
+                }
+
+                return $printService->canPrint($record);
             });
     }
 }

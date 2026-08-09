@@ -2,6 +2,17 @@
 
 return [
     'name' => 'Diagnostics',
+
+    /*
+     * Result files contain patient-identifiable clinical data, so they are kept on a
+     * private disk and served only through signed, policy-authorized download links.
+     */
+    'result_files' => [
+        'disk' => env('DIAGNOSTICS_RESULT_FILES_DISK', 'local'),
+        'directory' => 'diagnostics/results',
+        'link_ttl_minutes' => 5,
+    ],
+
     'permissions' => [
         'assign_diagnostic_fulfillment' => 'Assign Diagnostic Fulfillment',
         'collect_diagnostic_specimen' => 'Collect Diagnostic Specimen',

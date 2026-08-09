@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\URL;
 use Modules\Core\Models\BaseModel;
 use Modules\Diagnostics\Database\Factories\DiagnosticResultFileFactory;
 use Modules\Diagnostics\Enums\FileSourceType;
@@ -61,5 +62,22 @@ class DiagnosticResultFile extends BaseModel
     public function uploadedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    /**
+     * Short-lived signed link to the private download route. Returns null when no file
+     * was stored, so callers can render the row without a broken link.
+     */
+    public function downloadUrl(): ?string
+    {
+        if (blank($this->file_path)) {
+            return null;
+        }
+
+        return URL::temporarySignedRoute(
+            'diagnostics.result-files.download',
+            now()->addMinutes((int) config('diagnostics.result_files.link_ttl_minutes', 5)),
+            ['resultFile' => $this->getKey()],
+        );
     }
 }

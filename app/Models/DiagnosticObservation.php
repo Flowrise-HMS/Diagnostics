@@ -79,6 +79,52 @@ class DiagnosticObservation extends BaseModel
         return DiagnosticObservationFactory::new();
     }
 
+    /**
+     * The recorded result, whichever value column the observation was captured in.
+     */
+    public function getValueDisplayAttribute(): ?string
+    {
+        $value = match (true) {
+            $this->value_numeric !== null => (string) (0 + (float) $this->value_numeric),
+            filled($this->value_text) => $this->value_text,
+            filled($this->value_coded) => $this->value_coded,
+            $this->value_boolean !== null => $this->value_boolean ? 'Yes' : 'No',
+            $this->value_quantity_value !== null => trim((string) (0 + (float) $this->value_quantity_value).' '.($this->value_quantity_unit ?? '')),
+            $this->value_range_low !== null || $this->value_range_high !== null => trim(($this->value_range_low ?? '').' - '.($this->value_range_high ?? '')),
+            default => null,
+        };
+
+        if (blank($value)) {
+            return $this->data_absent_reason;
+        }
+
+        return filled($this->units) ? $value.' '.$this->units : $value;
+    }
+
+    /**
+     * The reference interval as it should read on a report, preferring the free-text form.
+     */
+    public function getReferenceRangeDisplayAttribute(): ?string
+    {
+        if (filled($this->reference_range_text)) {
+            return $this->reference_range_text;
+        }
+
+        if ($this->reference_range_min === null && $this->reference_range_max === null) {
+            return null;
+        }
+
+        $low = $this->reference_range_min !== null ? (string) (0 + (float) $this->reference_range_min) : '';
+        $high = $this->reference_range_max !== null ? (string) (0 + (float) $this->reference_range_max) : '';
+
+        return trim($low.' - '.$high);
+    }
+
+    public function isCritical(): bool
+    {
+        return in_array($this->abnormal_flag, [AbnormalFlag::CRITICALLY_HIGH, AbnormalFlag::CRITICALLY_LOW], true);
+    }
+
     public function fulfillment(): BelongsTo
     {
         return $this->belongsTo(DiagnosticFulfillment::class, 'fulfillment_id');

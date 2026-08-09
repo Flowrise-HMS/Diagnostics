@@ -17,11 +17,11 @@ class DiagnosticLabResultPrintService
 {
     public function canPrint(DiagnosticFulfillment $fulfillment): bool
     {
-        if ($fulfillment->discipline !== DiagnosticDiscipline::LAB) {
+        if ($fulfillment->discipline != DiagnosticDiscipline::LAB) {
             return false;
         }
 
-        if ($fulfillment->status !== FulfillmentStatus::COMPLETED) {
+        if ($fulfillment->status != FulfillmentStatus::COMPLETED) {
             return false;
         }
 
@@ -119,6 +119,8 @@ class DiagnosticLabResultPrintService
 
     protected function resolveResultRows(DiagnosticFulfillment $fulfillment): Collection
     {
+        $fulfillment->loadMissing(['latestReportVersion.observations', 'requestItem']);
+
         $observations = $fulfillment->latestReportVersion?->observations;
 
         if ($observations !== null && $observations->isNotEmpty()) {

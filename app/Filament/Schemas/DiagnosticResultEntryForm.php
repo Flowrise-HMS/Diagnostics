@@ -40,18 +40,30 @@ class DiagnosticResultEntryForm
                 ->defaultItems(0);
         }
 
-        $schema[] = FileUpload::make('result_files')
-            ->label('Result Files (PDF, Images)')
-            ->multiple()
-            ->directory('diagnostics/results')
-            ->acceptedFileTypes(['application/pdf', 'image/*', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
-            ->maxSize(10240);
+        $schema[] = self::resultFilesUpload();
 
         $schema[] = Textarea::make('notes')
             ->label('Notes')
             ->rows(2);
 
         return $schema;
+    }
+
+    /**
+     * Result files hold patient-identifiable data, so they are written to the private
+     * disk and their original names are kept alongside the generated storage paths.
+     */
+    public static function resultFilesUpload(): FileUpload
+    {
+        return FileUpload::make('result_files')
+            ->label('Result Files (PDF, Images)')
+            ->multiple()
+            ->disk(config('diagnostics.result_files.disk'))
+            ->directory(config('diagnostics.result_files.directory'))
+            ->visibility('private')
+            ->storeFileNamesIn('result_files_names')
+            ->acceptedFileTypes(['application/pdf', 'image/*', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+            ->maxSize(10240);
     }
 
     protected static function fieldToComponent(DiagnosticResultTemplateField $field): TextInput|Select

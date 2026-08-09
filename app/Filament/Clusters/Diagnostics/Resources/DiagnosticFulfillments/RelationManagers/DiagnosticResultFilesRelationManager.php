@@ -45,7 +45,9 @@ class DiagnosticResultFilesRelationManager extends RelationManager
                     ->required(),
                 FileUpload::make('file_path')
                     ->label('Result File')
-                    ->directory('diagnostics/results')
+                    ->disk(config('diagnostics.result_files.disk'))
+                    ->directory(config('diagnostics.result_files.directory'))
+                    ->visibility('private')
                     ->required(),
                 TextInput::make('mime_type')
                     ->label('MIME Type')

@@ -20,16 +20,14 @@ class RecordStructuredResultsAction
             ->label('Record Structured Results')
             ->icon('heroicon-o-clipboard-document-list')
             ->color('primary')
-            ->visible(function (mixed ...$args) use ($resolveRecord): bool {
+            ->visible(function (?DiagnosticFulfillment $record = null) use ($resolveRecord): bool {
                 $user = auth()->user();
 
                 if ($user === null) {
                     return false;
                 }
 
-                $record = $resolveRecord !== null
-                    ? $resolveRecord()
-                    : ($args[0] ?? null);
+                $record ??= $resolveRecord?->__invoke();
 
                 if (! $record instanceof DiagnosticFulfillment || $record->requestItem === null) {
                     return false;
@@ -37,10 +35,8 @@ class RecordStructuredResultsAction
 
                 return $user->can('recordStructuredResults', $record);
             })
-            ->schema(function (mixed ...$args) use ($resolveRecord): array {
-                $record = $resolveRecord !== null
-                    ? $resolveRecord()
-                    : ($args[0] ?? null);
+            ->schema(function (?DiagnosticFulfillment $record = null) use ($resolveRecord): array {
+                $record ??= $resolveRecord?->__invoke();
 
                 if (! $record instanceof DiagnosticFulfillment || $record->requestItem === null) {
                     return [];
@@ -48,10 +44,8 @@ class RecordStructuredResultsAction
 
                 return DiagnosticResultEntryForm::components($record->requestItem);
             })
-            ->action(function (array $data, DiagnosticResultService $resultService, mixed ...$args) use ($resolveRecord): void {
-                $record = $resolveRecord !== null
-                    ? $resolveRecord()
-                    : ($args[0] ?? null);
+            ->action(function (array $data, DiagnosticResultService $resultService, ?DiagnosticFulfillment $record = null) use ($resolveRecord): void {
+                $record ??= $resolveRecord?->__invoke();
 
                 if (! $record instanceof DiagnosticFulfillment || $record->requestItem === null) {
                     return;

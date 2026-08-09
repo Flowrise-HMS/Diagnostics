@@ -6,6 +6,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Core\Enums\NavigationGroup;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\DiagnosticsCluster;
@@ -44,6 +45,21 @@ class DiagnosticFulfillmentResource extends Resource
     public static function getRecordTitle(?Model $record): string|Htmlable|null
     {
         return $record?->title ?? static::getModelLabel();
+    }
+
+    /**
+     * The tables and infolists read through the request item to the service and client, so those
+     * relationships are loaded up front for every page and record resolution. Report observations
+     * are included because the print action evaluates printability for every table row.
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with([
+            'branch',
+            'latestReportVersion.observations',
+            'requestItem.service',
+            'requestItem.serviceRequest.patient',
+        ]);
     }
 
     public static function form(Schema $schema): Schema
