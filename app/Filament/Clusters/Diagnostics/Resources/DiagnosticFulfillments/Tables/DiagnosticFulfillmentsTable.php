@@ -59,6 +59,8 @@ class DiagnosticFulfillmentsTable
                 ->sortable(),
             ClientIdentityColumn::make(
                 resolve: fn (DiagnosticFulfillment $record) => $record->requestItem?->serviceRequest?->clientIdentity(),
+                patientRelation: 'requestItem.serviceRequest.patient',
+                includeGuestSearch: true,
             ),
             TextColumn::make('accession_number')
                 ->label('Accession')
