@@ -19,6 +19,7 @@ use Modules\Diagnostics\Enums\AbnormalFlag;
 use Modules\Diagnostics\Enums\DiagnosticDiscipline;
 use Modules\Diagnostics\Enums\FileSourceType;
 use Modules\Diagnostics\Enums\FulfillmentStatus;
+use Modules\Diagnostics\Exceptions\EmptyDiagnosticResultException;
 use Modules\Diagnostics\Filament\Schemas\DiagnosticResultEntryForm;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
 use Modules\Diagnostics\Models\DiagnosticObservation;
@@ -58,6 +59,8 @@ class DiagnosticResultService
     {
         $user = $user ?? Auth::user();
 
+        $this->assertHasResultContent($data);
+
         DB::transaction(function () use ($item, $data, $user) {
             $fulfillment = $this->getOrCreateFulfillment($item);
             $profile = $this->getProfile($item);
@@ -66,7 +69,7 @@ class DiagnosticResultService
 
             $reportVersion = $fulfillment->finalizeResult(
                 $data['report_status'] ?? 'final',
-                $this->buildReportVersionAttributes($profile, $data, $user),
+                $this->buildReportVersionAttributes($fulfillment->discipline, $data, $user),
             );
 
             $specimen = $fulfillment->specimens()->latest('collected_at')->first();
@@ -128,6 +131,39 @@ class DiagnosticResultService
 
             $item->markAsFulfilled($user->id);
         });
+    }
+
+    /**
+     * A result must carry something: a structured value, findings text, or a file.
+     * Without this guard an operator could close an order with nothing recorded.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws EmptyDiagnosticResultException
+     */
+    public function assertHasResultContent(array $data): void
+    {
+        foreach ($data as $key => $value) {
+            if (str_starts_with((string) $key, 'field_') && filled($value)) {
+                return;
+            }
+        }
+
+        if (filled($data['report_conclusion'] ?? null)) {
+            return;
+        }
+
+        if (! empty(array_filter((array) ($data['result_files'] ?? [])))) {
+            return;
+        }
+
+        foreach ((array) ($data['results'] ?? []) as $row) {
+            if (! empty($row['key'])) {
+                return;
+            }
+        }
+
+        throw EmptyDiagnosticResultException::make();
     }
 
     /**
@@ -276,6 +312,12 @@ class DiagnosticResultService
                     $results[$row['key']] = $row['value'];
                 }
             }
+        } elseif (filled($data['report_conclusion'] ?? null)) {
+            $results['conclusion'] = [
+                'label' => 'Findings / Result',
+                'value' => $data['report_conclusion'],
+                'type' => 'long_text',
+            ];
         }
 
         return $results;
@@ -283,7 +325,7 @@ class DiagnosticResultService
 
     protected function getOrCreateFulfillment(RequestItem $item): DiagnosticFulfillment
     {
-        $item->loadMissing('serviceRequest');
+        $item->loadMissing(['serviceRequest', 'service.category']);
 
         $profile = $this->getProfile($item);
 
@@ -291,10 +333,23 @@ class DiagnosticResultService
             ['request_item_id' => $item->id],
             [
                 'branch_id' => $item->serviceRequest?->branch_id ?? $this->branchService->getDefaultBranchId(),
-                'discipline' => $profile?->discipline ?? DiagnosticDiscipline::LAB,
+                'discipline' => $this->resolveDiscipline($item, $profile),
                 'status' => FulfillmentStatus::PENDING,
             ]
         );
+    }
+
+    /**
+     * Services in a diagnostic category can be resulted before an admin adds a profile,
+     * in which case the discipline follows the service category.
+     */
+    public function resolveDiscipline(RequestItem $item, ?DiagnosticServiceProfile $profile = null): DiagnosticDiscipline
+    {
+        $item->loadMissing('service.category');
+
+        return $profile?->discipline
+            ?? DiagnosticDiscipline::fromServiceCategoryCode(DiagnosticCatalogService::categoryCode($item->service?->category))
+            ?? DiagnosticDiscipline::LAB;
     }
 
     /**
@@ -319,7 +374,7 @@ class DiagnosticResultService
      * @return array<string, mixed>
      */
     protected function buildReportVersionAttributes(
-        ?DiagnosticServiceProfile $profile,
+        ?DiagnosticDiscipline $discipline,
         array $data,
         User $user,
     ): array {
@@ -329,7 +384,7 @@ class DiagnosticResultService
 
         if (! empty($data['report_conclusion'])) {
             $attributes['conclusion'] = $data['report_conclusion'];
-        } elseif ($profile?->discipline === DiagnosticDiscipline::PATHOLOGY) {
+        } elseif ($discipline === DiagnosticDiscipline::PATHOLOGY) {
             $gross = $data['gross_description'] ?? $data['field_gross_description'] ?? null;
             $microscopic = $data['microscopic_description'] ?? $data['field_microscopic_description'] ?? null;
             $diagnosis = $data['diagnosis'] ?? $data['field_diagnosis'] ?? null;

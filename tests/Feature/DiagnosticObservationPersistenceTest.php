@@ -19,7 +19,6 @@ use Modules\Diagnostics\Models\DiagnosticReferenceRange;
 use Modules\Diagnostics\Models\DiagnosticReportVersion;
 use Modules\Diagnostics\Models\DiagnosticResultTemplate;
 use Modules\Diagnostics\Models\DiagnosticResultTemplateField;
-use Modules\Diagnostics\Models\DiagnosticServiceProfile;
 use Modules\Patient\Models\Patient;
 use Tests\TestCase;
 
@@ -49,8 +48,7 @@ class DiagnosticObservationPersistenceTest extends TestCase
         $request = ServiceRequest::factory()->forPatient($patient)->create();
         $item = RequestItem::factory()->forRequest($request)->forService($service)->create();
 
-        $profile = DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $profile = $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
@@ -117,8 +115,7 @@ class DiagnosticObservationPersistenceTest extends TestCase
         $request = ServiceRequest::factory()->forPatient($patient)->create();
         $item = RequestItem::factory()->forRequest($request)->forService($service)->create();
 
-        $profile = DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $profile = $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
@@ -173,30 +170,26 @@ class DiagnosticObservationPersistenceTest extends TestCase
 
         $item = RequestItem::factory()->forService($panelService)->create();
 
-        $panelProfile = DiagnosticServiceProfile::create([
-            'service_id' => $panelService->id,
+        $panelProfile = $this->diagnosticProfileFor($panelService, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
 
-        $hbProfile = DiagnosticServiceProfile::create([
-            'service_id' => $hbService->id,
+        $hbProfile = $this->diagnosticProfileFor($hbService, [
             'discipline' => 'lab',
             'loinc_code' => 'hemoglobin',
             'loinc_display' => 'Hemoglobin',
             'is_active' => true,
         ]);
 
-        $wbcProfile = DiagnosticServiceProfile::create([
-            'service_id' => $wbcService->id,
+        $wbcProfile = $this->diagnosticProfileFor($wbcService, [
             'discipline' => 'lab',
             'loinc_code' => 'wbc',
             'loinc_display' => 'White Blood Cells',
             'is_active' => true,
         ]);
 
-        $pltProfile = DiagnosticServiceProfile::create([
-            'service_id' => $pltService->id,
+        $pltProfile = $this->diagnosticProfileFor($pltService, [
             'discipline' => 'lab',
             'loinc_code' => 'platelets',
             'loinc_display' => 'Platelets',
@@ -262,8 +255,7 @@ class DiagnosticObservationPersistenceTest extends TestCase
         $service = Service::factory()->create();
         $item = RequestItem::factory()->forService($service)->create();
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);

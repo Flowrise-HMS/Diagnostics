@@ -16,7 +16,6 @@ use Modules\Diagnostics\Models\DiagnosticReportVersion;
 use Modules\Diagnostics\Models\DiagnosticResultFile;
 use Modules\Diagnostics\Models\DiagnosticResultTemplate;
 use Modules\Diagnostics\Models\DiagnosticResultTemplateField;
-use Modules\Diagnostics\Models\DiagnosticServiceProfile;
 use Tests\TestCase;
 
 class DiagnosticResultServiceTest extends TestCase
@@ -54,8 +53,7 @@ class DiagnosticResultServiceTest extends TestCase
         $service = Service::factory()->create();
         $item = RequestItem::factory()->forService($service)->create();
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
@@ -87,8 +85,7 @@ class DiagnosticResultServiceTest extends TestCase
         $service = Service::factory()->create();
         $item = RequestItem::factory()->forService($service)->create();
 
-        $profile = DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $profile = $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
@@ -130,8 +127,7 @@ class DiagnosticResultServiceTest extends TestCase
         $service = Service::factory()->create();
         $item = RequestItem::factory()->forService($service)->create();
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
@@ -167,8 +163,7 @@ class DiagnosticResultServiceTest extends TestCase
         $service = Service::factory()->create();
         $item = RequestItem::factory()->forService($service)->create();
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
