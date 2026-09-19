@@ -24,6 +24,7 @@ class DiagnosticStudy extends BaseModel
     protected $keyType = 'string';
 
     protected $fillable = [
+        'branch_id',
         'fulfillment_id',
         'uid',
         'accession_number',

@@ -4,15 +4,15 @@ namespace Modules\Diagnostics\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Modules\Core\Models\BaseModel;
 use Modules\Diagnostics\Database\Factories\DiagnosticPanelFactory;
 
 /**
  * @method static static create(array<string, mixed> $attributes = [])
  */
-class DiagnosticPanel extends BaseModel
+class DiagnosticPanel extends Model
 {
     /** @use HasFactory<DiagnosticPanelFactory> */
     use HasFactory;

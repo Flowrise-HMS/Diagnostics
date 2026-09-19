@@ -22,7 +22,6 @@ return [
         'verify_diagnostic_result' => 'Verify Diagnostic Result',
         'sign_diagnostic_report' => 'Sign Diagnostic Report',
         'amend_diagnostic_report' => 'Amend Diagnostic Report',
-        'manage_diagnostic_panels' => 'Manage Diagnostic Panels',
         'manage_diagnostic_reference_ranges' => 'Manage Diagnostic Reference Ranges',
         'record_structured_diagnostic_observations' => 'Record Structured Diagnostic Observations',
         'manage_diagnostic_allocations' => 'Manage Diagnostic Allocations',

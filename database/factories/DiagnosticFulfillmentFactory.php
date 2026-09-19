@@ -4,6 +4,9 @@ namespace Modules\Diagnostics\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Modules\Clinical\Models\RequestItem;
+use Modules\Core\Enums\ServiceCategoryCode;
+use Modules\Core\Models\Service;
+use Modules\Core\Models\ServiceCategory;
 use Modules\Diagnostics\Enums\DiagnosticDiscipline;
 use Modules\Diagnostics\Enums\FulfillmentStatus;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
@@ -14,7 +17,16 @@ class DiagnosticFulfillmentFactory extends Factory
 
     public function definition(): array
     {
-        $requestItem = RequestItem::factory()->create();
+        // A non-diagnostic service, otherwise the auto-setup observer and the order bridge
+        // would already have created a fulfillment for this request item.
+        $service = Service::factory()->forCategory(
+            ServiceCategory::query()->firstOrCreate(
+                ['code' => ServiceCategoryCode::CON->value],
+                ['name' => ServiceCategoryCode::CON->getLabel(), 'is_active' => true],
+            ),
+        )->create();
+
+        $requestItem = RequestItem::factory()->forService($service)->create();
 
         return [
             'request_item_id' => $requestItem->id,

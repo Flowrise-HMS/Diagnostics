@@ -12,7 +12,6 @@ use Modules\Core\Enums\NavigationGroup;
 use Modules\Core\Models\Branch;
 use Modules\Core\Models\Service;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
-use Modules\Diagnostics\Models\DiagnosticServiceProfile;
 use Modules\Diagnostics\Models\DiagnosticSpecimen;
 use Modules\Diagnostics\Models\DiagnosticStudy;
 use Spatie\Permission\Models\Permission;
@@ -33,8 +32,7 @@ class DiagnosticReviewRegressionTest extends TestCase
     {
         $service = Service::factory()->create();
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
@@ -61,8 +59,7 @@ class DiagnosticReviewRegressionTest extends TestCase
         $branch = Branch::factory()->create(['code' => 'LAB01']);
         $service = Service::factory()->create();
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'default_specimen_type' => 'blood',
             'is_active' => true,
@@ -95,8 +92,7 @@ class DiagnosticReviewRegressionTest extends TestCase
     {
         $service = Service::factory()->create();
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
@@ -123,8 +119,7 @@ class DiagnosticReviewRegressionTest extends TestCase
     {
         $service = Service::factory()->create();
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'radiology',
             'modality' => 'CT',
             'metadata' => ['body_site' => 'chest'],
@@ -158,15 +153,13 @@ class DiagnosticReviewRegressionTest extends TestCase
         $labService = Service::factory()->create();
         $pathologyService = Service::factory()->create();
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $labService->id,
+        $this->diagnosticProfileFor($labService, [
             'discipline' => 'lab',
             'default_specimen_type' => 'serum',
             'is_active' => true,
         ]);
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $pathologyService->id,
+        $this->diagnosticProfileFor($pathologyService, [
             'discipline' => 'pathology',
             'default_specimen_type' => 'tissue',
             'is_active' => true,
@@ -202,12 +195,10 @@ class DiagnosticReviewRegressionTest extends TestCase
     {
         $fulfillmentResource = 'Modules\\Diagnostics\\Filament\\Clusters\\Diagnostics\\Resources\\DiagnosticFulfillments\\DiagnosticFulfillmentResource';
         $profileResource = 'Modules\\Diagnostics\\Filament\\Clusters\\Diagnostics\\Resources\\DiagnosticServiceProfiles\\DiagnosticServiceProfileResource';
-        $templateResource = 'Modules\\Diagnostics\\Filament\\Clusters\\Diagnostics\\Resources\\DiagnosticResultTemplates\\DiagnosticResultTemplateResource';
         $policyClass = 'Modules\\Diagnostics\\Policies\\DiagnosticFulfillmentPolicy';
 
         $this->assertTrue(class_exists($fulfillmentResource));
         $this->assertTrue(class_exists($profileResource));
-        $this->assertTrue(class_exists($templateResource));
         $this->assertTrue(class_exists($policyClass));
 
         $this->assertSame('danger', NavigationGroup::DIAGNOSTICS->getColor());
@@ -233,12 +224,6 @@ class DiagnosticReviewRegressionTest extends TestCase
         $this->assertArrayHasKey('create', $profilePages);
         $this->assertArrayHasKey('view', $profilePages);
         $this->assertArrayHasKey('edit', $profilePages);
-
-        $templatePages = $templateResource::getPages();
-        $this->assertArrayHasKey('index', $templatePages);
-        $this->assertArrayHasKey('create', $templatePages);
-        $this->assertArrayHasKey('view', $templatePages);
-        $this->assertArrayHasKey('edit', $templatePages);
     }
 
     public function test_diagnostic_fulfillment_policy_enforces_custom_workflow_permissions(): void

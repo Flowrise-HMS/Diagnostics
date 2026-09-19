@@ -39,9 +39,6 @@ class DiagnosticsCustomPermissionSeeder extends Seeder
             'super_admin',
             'laboratory_technician',
         ],
-        'manage_diagnostic_panels' => [
-            'super_admin',
-        ],
         'manage_diagnostic_reference_ranges' => [
             'super_admin',
         ],

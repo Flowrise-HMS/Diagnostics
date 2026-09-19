@@ -98,6 +98,37 @@ class DiagnosticServiceProfile extends BaseModel
             ->where('is_active', true);
     }
 
+    /**
+     * The result fields an operator fills in for this service, i.e. the fields of its
+     * default template. Admins edit them inline on the profile.
+     */
+    public function resultFields(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            DiagnosticResultTemplateField::class,
+            DiagnosticResultTemplate::class,
+            'profile_id',
+            'template_id',
+            'id',
+            'id',
+        )
+            ->where('diagnostic_result_templates.is_default', true)
+            ->where('diagnostic_result_templates.is_active', true)
+            ->orderBy('diagnostic_result_template_fields.sort_order');
+    }
+
+    /**
+     * @return array<string, string> Field id => label, for numeric fields only.
+     */
+    public function numericResultFieldOptions(): array
+    {
+        return $this->resultFields()
+            ->where('diagnostic_result_template_fields.value_type', 'numeric')
+            ->get()
+            ->mapWithKeys(fn (DiagnosticResultTemplateField $field): array => [$field->id => $field->label])
+            ->all();
+    }
+
     public function getTitleAttribute(): string
     {
         $serviceName = $this->relationLoaded('service')

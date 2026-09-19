@@ -216,7 +216,7 @@ class DiagnosticSupportInfrastructureTest extends TestCase
         $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('verify_diagnostic_result'));
         $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('record_structured_diagnostic_observations'));
         $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('print_diagnostic_lab_result'));
-        $this->assertTrue(Role::findByName('super_admin', 'web')->hasPermissionTo('manage_diagnostic_panels'));
+        $this->assertFalse(Permission::query()->where('name', 'manage_diagnostic_panels')->exists());
         $this->assertTrue(Role::findByName('super_admin', 'web')->hasPermissionTo('manage_diagnostic_reference_ranges'));
         $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('manage_diagnostic_allocations'));
         $this->assertTrue(Role::findByName('laboratory_technician', 'web')->hasPermissionTo('manage_diagnostic_specimen_processing'));

@@ -33,17 +33,6 @@ class DiagnosticsShieldPermissionsSeeder extends Seeder
         'RestoreAny DiagnosticServiceProfile',
         'Replicate DiagnosticServiceProfile',
         'Reorder DiagnosticServiceProfile',
-        'ViewAny DiagnosticResultTemplate',
-        'View DiagnosticResultTemplate',
-        'Create DiagnosticResultTemplate',
-        'Update DiagnosticResultTemplate',
-        'Delete DiagnosticResultTemplate',
-        'Restore DiagnosticResultTemplate',
-        'ForceDelete DiagnosticResultTemplate',
-        'ForceDeleteAny DiagnosticResultTemplate',
-        'RestoreAny DiagnosticResultTemplate',
-        'Replicate DiagnosticResultTemplate',
-        'Reorder DiagnosticResultTemplate',
         'View DiagnosticsCluster',
     ];
 
@@ -59,8 +48,6 @@ class DiagnosticsShieldPermissionsSeeder extends Seeder
             'Update DiagnosticFulfillment',
             'ViewAny DiagnosticServiceProfile',
             'View DiagnosticServiceProfile',
-            'ViewAny DiagnosticResultTemplate',
-            'View DiagnosticResultTemplate',
         ]);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

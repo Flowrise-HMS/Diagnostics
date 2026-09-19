@@ -22,7 +22,6 @@ use Modules\Diagnostics\Models\DiagnosticReportSignature;
 use Modules\Diagnostics\Models\DiagnosticReportVersion;
 use Modules\Diagnostics\Models\DiagnosticResultTemplate;
 use Modules\Diagnostics\Models\DiagnosticResultTemplateField;
-use Modules\Diagnostics\Models\DiagnosticServiceProfile;
 use Modules\Diagnostics\Models\DiagnosticSpecimenContainer;
 use Modules\Diagnostics\Models\DiagnosticStudy;
 use Tests\TestCase;
@@ -79,8 +78,7 @@ class DisciplineWorkflowTest extends TestCase
         $service = Service::factory()->create(['name' => 'Glucose']);
         $item = RequestItem::factory()->forService($service)->create();
 
-        $profile = DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $profile = $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
@@ -134,8 +132,7 @@ class DisciplineWorkflowTest extends TestCase
         $service = Service::factory()->create();
         $item = RequestItem::factory()->forService($service)->create();
 
-        $profile = DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $profile = $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'auto_verify_eligible' => true,
             'is_active' => true,
@@ -181,8 +178,7 @@ class DisciplineWorkflowTest extends TestCase
         $service = Service::factory()->create();
         $item = RequestItem::factory()->forService($service)->create();
 
-        $profile = DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $profile = $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'auto_verify_eligible' => true,
             'is_active' => true,
@@ -251,8 +247,7 @@ class DisciplineWorkflowTest extends TestCase
     {
         $service = Service::factory()->create();
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'radiology',
             'modality' => 'MRI',
             'metadata' => ['body_site' => 'brain'],
@@ -346,8 +341,7 @@ class DisciplineWorkflowTest extends TestCase
         $service = Service::factory()->create(['name' => 'Biopsy']);
         $item = RequestItem::factory()->forService($service)->create();
 
-        $profile = DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $profile = $this->diagnosticProfileFor($service, [
             'discipline' => 'pathology',
             'is_active' => true,
         ]);

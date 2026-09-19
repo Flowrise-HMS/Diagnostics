@@ -9,7 +9,6 @@ use Modules\Diagnostics\Models\DiagnosticFulfillment;
 use Modules\Diagnostics\Models\DiagnosticResultFile;
 use Modules\Diagnostics\Models\DiagnosticResultTemplate;
 use Modules\Diagnostics\Models\DiagnosticResultTemplateField;
-use Modules\Diagnostics\Models\DiagnosticServiceProfile;
 use Tests\TestCase;
 
 class DiagnosticDomainContractTest extends TestCase
@@ -27,8 +26,7 @@ class DiagnosticDomainContractTest extends TestCase
     {
         $service = Service::factory()->create();
 
-        $profile = DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $profile = $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'loinc_code' => '58410-2',
             'loinc_display' => 'CBC panel - Blood',
@@ -71,8 +69,7 @@ class DiagnosticDomainContractTest extends TestCase
     public function test_profile_can_have_one_default_result_template_for_fast_entry(): void
     {
         $service = Service::factory()->create();
-        $profile = DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $profile = $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);

@@ -3,7 +3,9 @@
 namespace Modules\Diagnostics\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Modules\Core\Enums\ServiceCategoryCode;
 use Modules\Core\Models\Service;
+use Modules\Core\Models\ServiceCategory;
 use Modules\Diagnostics\Enums\DiagnosticDiscipline;
 use Modules\Diagnostics\Models\DiagnosticServiceProfile;
 
@@ -14,7 +16,14 @@ class DiagnosticServiceProfileFactory extends Factory
     public function definition(): array
     {
         return [
-            'service_id' => Service::factory(),
+            // A non-diagnostic category, so the auto-setup observer never races this factory
+            // for the unique service_id.
+            'service_id' => Service::factory()->forCategory(
+                ServiceCategory::query()->firstOrCreate(
+                    ['code' => ServiceCategoryCode::CON->value],
+                    ['name' => ServiceCategoryCode::CON->getLabel(), 'is_active' => true],
+                ),
+            ),
             'discipline' => fake()->randomElement(DiagnosticDiscipline::cases()),
             'loinc_code' => fake()->optional()->numerify('#####-#'),
             'loinc_display' => fake()->optional()->sentence(3),

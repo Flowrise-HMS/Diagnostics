@@ -44,6 +44,20 @@ enum DiagnosticDiscipline: string implements HasColor, HasDescription, HasLabel
         return array_column(self::cases(), 'value');
     }
 
+    /**
+     * Map a Core service category code onto the discipline that fulfils it.
+     * `DIA` is a generic diagnostics bucket and is treated as laboratory work.
+     */
+    public static function fromServiceCategoryCode(?string $code): ?self
+    {
+        return match (strtoupper((string) $code)) {
+            'LAB', 'DIA' => self::LAB,
+            'RAD' => self::RADIOLOGY,
+            'PAT' => self::PATHOLOGY,
+            default => null,
+        };
+    }
+
     public function supportsSpecimenWorkflow(): bool
     {
         return in_array($this, [self::LAB, self::PATHOLOGY], true);

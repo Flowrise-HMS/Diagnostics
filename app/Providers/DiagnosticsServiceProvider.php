@@ -3,11 +3,17 @@
 namespace Modules\Diagnostics\Providers;
 
 use Filament\Pages\Page;
+use Illuminate\Contracts\Debug\ExceptionHandler;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Exceptions\InvalidSignatureException;
 use Modules\Core\Classes\Support\PageWidgetsRegistry;
+use Modules\Core\Models\Service;
 use Modules\Core\Support\ModuleAvailability;
 use Modules\Core\Support\OptionalClass;
+use Modules\Diagnostics\Console\SyncDiagnosticProfilesCommand;
 use Modules\Diagnostics\Filament\Widgets\CompletedDiagnosticResultsWidget;
 use Modules\Diagnostics\Filament\Widgets\PendingDiagnosticFulfillmentsWidget;
+use Modules\Diagnostics\Observers\ServiceObserver;
 use Nwidart\Modules\Facades\Module;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
@@ -37,7 +43,26 @@ class DiagnosticsServiceProvider extends ModuleServiceProvider
     {
         parent::boot();
 
+        Service::observe(ServiceObserver::class);
+        $this->commands([SyncDiagnosticProfilesCommand::class]);
+        $this->renderExpiredResultFileLinks();
+
         $this->registerClinicalWorkspaceWidgets();
+    }
+
+    /**
+     * Result file links are short-lived signed URLs; an expired one should tell the
+     * clinician what to do instead of a bare "Invalid signature".
+     */
+    protected function renderExpiredResultFileLinks(): void
+    {
+        $this->app->make(ExceptionHandler::class)->renderable(function (InvalidSignatureException $exception, Request $request) {
+            if (! $request->is('diagnostics/result-files/*')) {
+                return null;
+            }
+
+            return response()->view('diagnostics::errors.expired-link', [], 403);
+        });
     }
 
     protected function registerClinicalWorkspaceWidgets(): void

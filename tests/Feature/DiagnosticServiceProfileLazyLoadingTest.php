@@ -38,7 +38,7 @@ class DiagnosticServiceProfileLazyLoadingTest extends TestCase
         Filament::setCurrentPanel(Filament::getDefaultPanel());
     }
 
-    public function test_list_page_renders_default_template_column_without_lazy_loading(): void
+    public function test_list_page_renders_result_fields_count_column_without_lazy_loading(): void
     {
         Model::preventLazyLoading();
 
@@ -50,20 +50,22 @@ class DiagnosticServiceProfileLazyLoadingTest extends TestCase
             'is_default' => true,
             'is_active' => true,
         ]);
+        $template->fields()->create(['field_key' => 'hb', 'label' => 'Hb', 'value_type' => 'numeric', 'sort_order' => 0]);
+        $template->fields()->create(['field_key' => 'wbc', 'label' => 'WBC', 'value_type' => 'numeric', 'sort_order' => 1]);
 
         Livewire::test(ListDiagnosticServiceProfiles::class)
             ->assertOk()
-            ->tap(function ($page) use ($profile, $template): void {
+            ->tap(function ($page) use ($profile): void {
                 $record = $page->instance()->getTableRecord($profile->getKey());
 
                 $this->assertSame(
-                    $template->name,
-                    $page->instance()->getTable()->getColumn('defaultTemplate.name')->record($record)->getStateFromRecord(),
+                    2,
+                    (int) $page->instance()->getTable()->getColumn('result_fields_count')->record($record)->getStateFromRecord(),
                 );
             });
     }
 
-    public function test_view_page_renders_default_template_entry_without_lazy_loading(): void
+    public function test_view_page_renders_result_fields_without_lazy_loading(): void
     {
         Model::preventLazyLoading();
 
@@ -110,22 +112,19 @@ class DiagnosticServiceProfileLazyLoadingTest extends TestCase
 
         $item = RequestItem::factory()->forService($panelService)->create();
 
-        $panelProfile = DiagnosticServiceProfile::create([
-            'service_id' => $panelService->id,
+        $panelProfile = $this->diagnosticProfileFor($panelService, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
 
-        $hbProfile = DiagnosticServiceProfile::create([
-            'service_id' => $hbService->id,
+        $hbProfile = $this->diagnosticProfileFor($hbService, [
             'discipline' => 'lab',
             'loinc_code' => 'hemoglobin',
             'loinc_display' => 'Hemoglobin',
             'is_active' => true,
         ]);
 
-        $pltProfile = DiagnosticServiceProfile::create([
-            'service_id' => $pltService->id,
+        $pltProfile = $this->diagnosticProfileFor($pltService, [
             'discipline' => 'lab',
             'loinc_code' => 'platelet',
             'loinc_display' => 'Platelets',

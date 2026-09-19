@@ -8,6 +8,7 @@ use Modules\Diagnostics\Enums\AbnormalFlag;
 use Modules\Diagnostics\Enums\ObservationStatus;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
 use Modules\Diagnostics\Models\DiagnosticObservation;
+use Modules\Diagnostics\Models\DiagnosticReferenceRange;
 use Modules\Diagnostics\Models\DiagnosticReportVersion;
 use Modules\Diagnostics\Models\DiagnosticResultTemplateField;
 use Modules\Diagnostics\Models\DiagnosticServiceProfile;
@@ -272,6 +273,10 @@ class DiagnosticObservationWriter
     }
 
     /**
+     * Ranges attached to the field win; profile-wide ranges (no field) only apply when
+     * the profile has a single analyte, so a multi-field template never inherits one
+     * range for every field. The field's own low/high is the fallback.
+     *
      * @return array{min: ?float, max: ?float, text: ?string, units: ?string, critical_low: ?float, critical_high: ?float}
      */
     protected function resolveReferenceRange(
@@ -280,31 +285,14 @@ class DiagnosticObservationWriter
         ?Patient $patient,
     ): array {
         if ($patient !== null) {
-            $ageMonths = $patient->date_of_birth?->diffInMonths(now());
-            $gender = $patient->gender?->value;
-
-            $matched = $profile->referenceRanges->first(function ($range) use ($ageMonths, $gender) {
-                if ($range->gender !== 'any' && $range->gender !== $gender) {
-                    return false;
-                }
-
-                if ($range->age_min_months !== null && $ageMonths !== null && $ageMonths < $range->age_min_months) {
-                    return false;
-                }
-
-                if ($range->age_max_months !== null && $ageMonths !== null && $ageMonths > $range->age_max_months) {
-                    return false;
-                }
-
-                return true;
-            });
+            $matched = $this->matchPopulationRange($profile, $field, $patient);
 
             if ($matched !== null) {
                 return [
                     'min' => $matched->min_value !== null ? (float) $matched->min_value : null,
                     'max' => $matched->max_value !== null ? (float) $matched->max_value : null,
                     'text' => $matched->range_text,
-                    'units' => $matched->units,
+                    'units' => $matched->units ?? $field?->default_units,
                     'critical_low' => $matched->critical_low !== null ? (float) $matched->critical_low : null,
                     'critical_high' => $matched->critical_high !== null ? (float) $matched->critical_high : null,
                 ];
@@ -330,6 +318,43 @@ class DiagnosticObservationWriter
             'critical_low' => null,
             'critical_high' => null,
         ];
+    }
+
+    protected function matchPopulationRange(
+        DiagnosticServiceProfile $profile,
+        ?DiagnosticResultTemplateField $field,
+        Patient $patient,
+    ): ?DiagnosticReferenceRange {
+        $candidates = $field !== null
+            ? $profile->referenceRanges->where('template_field_id', $field->id)
+            : collect();
+
+        if ($candidates->isEmpty() && ($field === null || $this->getTemplateFields($profile)->count() <= 1)) {
+            $candidates = $profile->referenceRanges->whereNull('template_field_id');
+        }
+
+        if ($candidates->isEmpty()) {
+            return null;
+        }
+
+        $ageMonths = $patient->date_of_birth?->diffInMonths(now());
+        $gender = $patient->gender?->value;
+
+        return $candidates->first(function (DiagnosticReferenceRange $range) use ($ageMonths, $gender): bool {
+            if ($range->gender !== 'any' && $range->gender !== $gender) {
+                return false;
+            }
+
+            if ($range->age_min_months !== null && $ageMonths !== null && $ageMonths < $range->age_min_months) {
+                return false;
+            }
+
+            if ($range->age_max_months !== null && $ageMonths !== null && $ageMonths > $range->age_max_months) {
+                return false;
+            }
+
+            return true;
+        });
     }
 
     /**

@@ -12,7 +12,6 @@ use Modules\Core\Models\Service;
 use Modules\Diagnostics\Classes\Services\DiagnosticLabResultPrintService;
 use Modules\Diagnostics\Classes\Services\DiagnosticResultService;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
-use Modules\Diagnostics\Models\DiagnosticServiceProfile;
 use Modules\Patient\Models\Patient;
 use Tests\TestCase;
 
@@ -34,8 +33,7 @@ class DiagnosticLegacyTaskResultsTest extends TestCase
         $branch = Branch::factory()->create();
         $patient = Patient::factory()->create(['branch_id' => $branch->id]);
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
@@ -84,8 +82,7 @@ class DiagnosticLegacyTaskResultsTest extends TestCase
     {
         $user = User::factory()->create();
         $service = Service::factory()->create();
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);

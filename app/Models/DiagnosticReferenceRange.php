@@ -4,14 +4,14 @@ namespace Modules\Diagnostics\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Modules\Core\Models\BaseModel;
 use Modules\Diagnostics\Database\Factories\DiagnosticReferenceRangeFactory;
 
 /**
  * @method static static create(array<string, mixed> $attributes = [])
  */
-class DiagnosticReferenceRange extends BaseModel
+class DiagnosticReferenceRange extends Model
 {
     /** @use HasFactory<DiagnosticReferenceRangeFactory> */
     use HasFactory;
@@ -22,6 +22,7 @@ class DiagnosticReferenceRange extends BaseModel
 
     protected $fillable = [
         'profile_id',
+        'template_field_id',
         'gender',
         'age_min_months',
         'age_max_months',
@@ -50,5 +51,10 @@ class DiagnosticReferenceRange extends BaseModel
     public function profile(): BelongsTo
     {
         return $this->belongsTo(DiagnosticServiceProfile::class, 'profile_id');
+    }
+
+    public function templateField(): BelongsTo
+    {
+        return $this->belongsTo(DiagnosticResultTemplateField::class, 'template_field_id');
     }
 }

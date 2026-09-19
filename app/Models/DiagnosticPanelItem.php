@@ -4,14 +4,14 @@ namespace Modules\Diagnostics\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Modules\Core\Models\BaseModel;
 use Modules\Diagnostics\Database\Factories\DiagnosticPanelItemFactory;
 
 /**
  * @method static static create(array<string, mixed> $attributes = [])
  */
-class DiagnosticPanelItem extends BaseModel
+class DiagnosticPanelItem extends Model
 {
     /** @use HasFactory<DiagnosticPanelItemFactory> */
     use HasFactory;

@@ -62,6 +62,7 @@ class CreateDiagnosticFulfillmentFromRequestItem
                 $fulfillment->study()->firstOrCreate(
                     ['fulfillment_id' => $fulfillment->id],
                     [
+                        'branch_id' => $fulfillment->branch_id,
                         'modality' => $profile->modality,
                         'body_site' => $profile->metadata['body_site'] ?? null,
                         'accession_number' => $fulfillment->accession_number,

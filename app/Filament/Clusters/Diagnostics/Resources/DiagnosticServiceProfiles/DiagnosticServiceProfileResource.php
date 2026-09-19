@@ -14,7 +14,6 @@ use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServic
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Pages\ListDiagnosticServiceProfileActivities;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Pages\ListDiagnosticServiceProfiles;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Pages\ViewDiagnosticServiceProfile;
-use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\RelationManagers\DiagnosticPanelsRelationManager;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\RelationManagers\DiagnosticReferenceRangesRelationManager;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Schemas\DiagnosticServiceProfileForm;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticServiceProfiles\Schemas\DiagnosticServiceProfileInfolist;
@@ -30,6 +29,12 @@ class DiagnosticServiceProfileResource extends Resource
     protected static ?string $cluster = DiagnosticsCluster::class;
 
     protected static ?string $recordTitleAttribute = 'loinc_display';
+
+    protected static ?string $modelLabel = 'Diagnostic Service';
+
+    protected static ?string $pluralModelLabel = 'Diagnostic Services';
+
+    protected static ?string $navigationLabel = 'Diagnostic Services';
 
     protected static ?string $icon = 'heroicon-o-beaker';
 
@@ -60,7 +65,6 @@ class DiagnosticServiceProfileResource extends Resource
     public static function getRelations(): array
     {
         return [
-            DiagnosticPanelsRelationManager::class,
             DiagnosticReferenceRangesRelationManager::class,
         ];
     }

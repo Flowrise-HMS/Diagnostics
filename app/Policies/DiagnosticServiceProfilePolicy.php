@@ -67,11 +67,6 @@ class DiagnosticServiceProfilePolicy
         return $authUser->can('Reorder DiagnosticServiceProfile');
     }
 
-    public function managePanels(AuthUser $authUser, DiagnosticServiceProfile $diagnosticServiceProfile): bool
-    {
-        return $authUser->can('manage_diagnostic_panels');
-    }
-
     public function manageReferenceRanges(AuthUser $authUser, DiagnosticServiceProfile $diagnosticServiceProfile): bool
     {
         return $authUser->can('manage_diagnostic_reference_ranges');
