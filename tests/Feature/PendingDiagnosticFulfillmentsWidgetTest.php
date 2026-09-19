@@ -43,7 +43,7 @@ function pendingDiagnosticWidgetUser(Branch $branch, array $permissions = []): U
 function pendingFulfillmentFor(Patient $patient, FulfillmentStatus $status = FulfillmentStatus::PENDING): DiagnosticFulfillment
 {
     $serviceRequest = ServiceRequest::factory()->forPatient($patient)->create();
-    $requestItem = RequestItem::factory()->forRequest($serviceRequest)->create();
+    $requestItem = RequestItem::factory()->forRequest($serviceRequest)->forService(test()->nonDiagnosticService())->create();
 
     return DiagnosticFulfillment::factory()->create([
         'request_item_id' => $requestItem->id,

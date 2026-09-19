@@ -53,7 +53,7 @@ function diagnosticWidgetUser(Branch $branch, array $permissions = []): User
 function completedFulfillmentFor(Patient $patient, DiagnosticDiscipline $discipline = DiagnosticDiscipline::LAB, ?string $accession = null): DiagnosticFulfillment
 {
     $serviceRequest = ServiceRequest::factory()->forPatient($patient)->create();
-    $requestItem = RequestItem::factory()->forRequest($serviceRequest)->completed()->create();
+    $requestItem = RequestItem::factory()->forRequest($serviceRequest)->forService(test()->nonDiagnosticService())->completed()->create();
 
     return DiagnosticFulfillment::factory()->create([
         'request_item_id' => $requestItem->id,
@@ -206,6 +206,42 @@ it('renders the submitted observations, files and entry notes in the fulfillment
         ->assertSee('Severe anaemia')
         ->assertSee('haemoglobin-report.pdf')
         ->assertSee('Sample haemolysed, repeat draw taken');
+});
+
+it('previews image files inline and offers to open PDFs', function (): void {
+    $user = diagnosticWidgetUser($this->branch, [
+        'ViewAny DiagnosticFulfillment',
+        'View DiagnosticFulfillment',
+    ]);
+
+    $fulfillment = submittedResultFor($this->patient, $user);
+
+    DiagnosticResultFile::factory()->create([
+        'fulfillment_id' => $fulfillment->id,
+        'branch_id' => $fulfillment->branch_id,
+        'file_name' => 'chest-pa.jpg',
+        'file_path' => 'diagnostics/results/chest-pa.jpg',
+        'file_type' => 'jpg',
+        'mime_type' => 'image/jpeg',
+        'uploaded_by' => $user->id,
+    ]);
+
+    DiagnosticResultFile::query()
+        ->where('fulfillment_id', $fulfillment->id)
+        ->where('file_name', 'haemoglobin-report.pdf')
+        ->update(['file_type' => 'pdf', 'mime_type' => 'application/pdf']);
+
+    Gate::before(fn (): bool => true);
+    Filament::setCurrentPanel(Filament::getDefaultPanel());
+    $this->actingAs($user);
+
+    Livewire::test(ViewDiagnosticFulfillment::class, ['record' => $fulfillment->getKey()])
+        ->assertOk()
+        ->assertSee('chest-pa.jpg')
+        ->assertSee('Open image')
+        ->assertSee('Open PDF')
+        ->assertSee('/inline?', false)
+        ->assertSee('alt="chest-pa.jpg"', false);
 });
 
 it('formats observation values and reference ranges from whichever column was filled', function (): void {

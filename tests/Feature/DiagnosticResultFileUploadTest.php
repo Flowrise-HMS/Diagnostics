@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Modules\Clinical\Classes\Services\FulfillmentService;
+use Modules\Clinical\Filament\Clusters\Workspace\Pages\PatientProfile;
 use Modules\Clinical\Filament\Widgets\PendingFulfillmentsWidget;
 use Modules\Clinical\Models\RequestItem;
 use Modules\Clinical\Models\ServiceRequest;
@@ -40,8 +41,7 @@ beforeEach(function (): void {
             'requires_payment_before' => false,
         ]);
 
-    DiagnosticServiceProfile::create([
-        'service_id' => $this->service->id,
+    $this->diagnosticProfileFor($this->service, [
         'discipline' => DiagnosticDiscipline::LAB,
         'default_specimen_type' => 'blood',
         'is_active' => true,
@@ -103,6 +103,21 @@ it('stores a file uploaded through the pending fulfillments widget', function ()
     assertStoredResultFile($this->fulfillment);
 });
 
+it('stores a result file uploaded through the patient page fulfill service action', function (): void {
+    Livewire::test(PatientProfile::class, ['patientId' => $this->patient->id])
+        ->mountAction('fulfill_service')
+        ->setActionData(['request_item_id' => $this->requestItem->id])
+        ->setActionData([
+            'request_item_id' => $this->requestItem->id,
+            'result_files' => [UploadedFile::fake()->create('fbc-report.pdf', 100, 'application/pdf')],
+        ])
+        ->callMountedAction()
+        ->assertHasNoActionErrors()
+        ->assertNotified();
+
+    assertStoredResultFile($this->fulfillment);
+});
+
 it('discards an unresolved livewire placeholder instead of recording it as a path', function (): void {
     app(DiagnosticResultService::class)->submit($this->requestItem, [
         'result_files' => ['livewire-file:zixX1aRBlHV3fT3qO0o49T6DKaGygK3XtaF5OX8H.pdf'],
@@ -138,6 +153,34 @@ it('serves a stored result file through a signed download route', function (): v
     $this->get($resultFile->downloadUrl())->assertSuccessful();
 });
 
+it('serves images inline through a signed route', function (): void {
+    Storage::fake(config('diagnostics.result_files.disk'));
+
+    $resultFile = DiagnosticResultFile::factory()->create([
+        'fulfillment_id' => $this->fulfillment->id,
+        'branch_id' => $this->fulfillment->branch_id,
+        'file_name' => 'chest.png',
+        'file_path' => 'diagnostics/results/chest.png',
+        'file_type' => 'png',
+        'mime_type' => 'image/png',
+        'uploaded_by' => $this->user->id,
+    ]);
+
+    Storage::disk(config('diagnostics.result_files.disk'))
+        ->put('diagnostics/results/chest.png', 'png bytes');
+
+    expect($resultFile->isImage())->toBeTrue()
+        ->and($resultFile->canOpenInline())->toBeTrue();
+
+    $this->get($resultFile->inlineUrl())
+        ->assertSuccessful()
+        ->assertHeader('Content-Type', 'image/png')
+        ->assertHeader('Content-Disposition', 'inline; filename=chest.png');
+
+    $this->get(route('diagnostics.result-files.inline', ['resultFile' => $resultFile->getKey()]))
+        ->assertForbidden();
+});
+
 it('rejects a result file download without a valid signature', function (): void {
     $resultFile = DiagnosticResultFile::factory()->create([
         'fulfillment_id' => $this->fulfillment->id,
@@ -148,7 +191,8 @@ it('rejects a result file download without a valid signature', function (): void
     ]);
 
     $this->get(route('diagnostics.result-files.download', ['resultFile' => $resultFile->getKey()]))
-        ->assertForbidden();
+        ->assertForbidden()
+        ->assertSee('This result file link has expired');
 });
 
 function assertStoredResultFile(DiagnosticFulfillment $fulfillment): void

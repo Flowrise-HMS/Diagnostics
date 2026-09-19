@@ -3,8 +3,11 @@
 namespace Modules\Diagnostics\Tests\Feature;
 
 use App\Models\User;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Modules\Diagnostics\Enums\DiagnosticDiscipline;
+use Modules\Diagnostics\Enums\FulfillmentStatus;
 use Modules\Diagnostics\Filament\Actions\RecordStructuredResultsAction;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\DiagnosticFulfillmentResource;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\Pages\ViewDiagnosticFulfillment;
@@ -13,6 +16,7 @@ use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfil
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\RelationManagers\DiagnosticObservationsRelationManager;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\RelationManagers\DiagnosticSpecimensRelationManager;
 use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\RelationManagers\DiagnosticStudiesRelationManager;
+use Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\Tables\DiagnosticFulfillmentsTable;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
 use Modules\Diagnostics\Models\DiagnosticReportVersion;
 use Spatie\Permission\Models\Permission;
@@ -93,6 +97,28 @@ class DiagnosticFulfillmentFilamentOperationsTest extends TestCase
         $this->actingAs($user);
 
         $this->assertFalse($action->isVisible());
+    }
+
+    public function test_record_results_is_a_visible_button_for_active_fulfillments_and_hidden_once_completed(): void
+    {
+        $this->migrateModules();
+
+        $user = User::factory()->create();
+        Permission::findOrCreate('record_structured_diagnostic_observations', 'web');
+        $user->givePermissionTo('record_structured_diagnostic_observations');
+        $this->actingAs($user);
+
+        $pending = DiagnosticFulfillment::factory()->create(['status' => FulfillmentStatus::PENDING]);
+        $completed = DiagnosticFulfillment::factory()->create(['status' => FulfillmentStatus::COMPLETED]);
+
+        $this->assertTrue(RecordStructuredResultsAction::make()->record($pending)->isVisible());
+        $this->assertFalse(RecordStructuredResultsAction::make()->record($completed)->isVisible());
+
+        $rowActions = DiagnosticFulfillmentsTable::recordActions();
+
+        $this->assertInstanceOf(Action::class, $rowActions[0]);
+        $this->assertSame('recordStructuredResults', $rowActions[0]->getName());
+        $this->assertInstanceOf(ActionGroup::class, $rowActions[1]);
     }
 
     public function test_record_structured_results_action_is_hidden_on_table_row_without_request_item(): void

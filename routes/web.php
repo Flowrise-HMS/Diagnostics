@@ -11,4 +11,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('diagnostics/result-files/{resultFile}/download', [DiagnosticResultFileController::class, 'download'])
         ->middleware('signed')
         ->name('diagnostics.result-files.download');
+
+    Route::get('diagnostics/result-files/{resultFile}/inline', [DiagnosticResultFileController::class, 'inline'])
+        ->middleware('signed')
+        ->name('diagnostics.result-files.inline');
 });

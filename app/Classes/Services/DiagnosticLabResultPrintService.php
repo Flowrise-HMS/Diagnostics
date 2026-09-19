@@ -15,17 +15,36 @@ use Modules\Diagnostics\Models\DiagnosticObservation;
 
 class DiagnosticLabResultPrintService
 {
+    /**
+     * Any completed result can be printed once there is something to show: value rows
+     * for lab work, a narrative report for imaging and pathology, or attached files.
+     */
     public function canPrint(DiagnosticFulfillment $fulfillment): bool
     {
-        if ($fulfillment->discipline != DiagnosticDiscipline::LAB) {
+        if ($fulfillment->status !== FulfillmentStatus::COMPLETED) {
             return false;
         }
 
-        if ($fulfillment->status != FulfillmentStatus::COMPLETED) {
-            return false;
+        if ($this->resolveResultRows($fulfillment)->isNotEmpty()) {
+            return true;
         }
 
-        return $this->resolveResultRows($fulfillment)->isNotEmpty();
+        $fulfillment->loadMissing('latestReportVersion');
+
+        if (filled($fulfillment->latestReportVersion?->conclusion)) {
+            return true;
+        }
+
+        return $fulfillment->resultFiles()->exists();
+    }
+
+    public function reportTitle(DiagnosticFulfillment $fulfillment): string
+    {
+        return match ($fulfillment->discipline) {
+            DiagnosticDiscipline::RADIOLOGY => 'Radiology Report',
+            DiagnosticDiscipline::PATHOLOGY => 'Pathology Report',
+            default => 'Laboratory Result Report',
+        };
     }
 
     /**
@@ -41,22 +60,31 @@ class DiagnosticLabResultPrintService
             'requestItem.tasks.performedBy',
             'latestReportVersion.observations',
             'latestReportVersion.signatures.signedBy',
+            'resultFiles',
         ]);
 
         $serviceRequest = $fulfillment->requestItem?->serviceRequest;
         $latestTask = $this->resolveLatestCompletedTask($fulfillment);
         $reportVersion = $fulfillment->latestReportVersion;
 
+        $rows = $this->resolveResultRows($fulfillment);
+        $isNarrative = $fulfillment->discipline !== DiagnosticDiscipline::LAB;
+
         return [
             'fulfillment' => $fulfillment,
+            'discipline' => $fulfillment->discipline,
+            'reportTitle' => $this->reportTitle($fulfillment),
             'branch' => $fulfillment->branch,
             'organization' => $fulfillment->branch?->organization,
             'serviceRequest' => $serviceRequest,
-            'serviceName' => $fulfillment->requestItem?->service?->name ?? 'Laboratory Test',
+            'serviceName' => $fulfillment->requestItem?->service?->name ?? 'Diagnostic Test',
             'requestNumber' => $serviceRequest?->request_number,
             'subject' => $serviceRequest ? $this->resolveSubject($serviceRequest) : [],
             'client' => $serviceRequest?->clientIdentity() ?? ClientIdentityResolver::resolve(),
-            'resultRows' => $this->resolveResultRows($fulfillment),
+            'resultRows' => $isNarrative ? $rows->reject(fn (array $row): bool => $this->isNarrativeRow($row)) : $rows,
+            'narrativeRows' => $isNarrative ? $rows->filter(fn (array $row): bool => $this->isNarrativeRow($row))->values() : collect(),
+            'conclusion' => $reportVersion?->conclusion,
+            'files' => $fulfillment->resultFiles->sortBy('created_at')->values(),
             'notes' => $latestTask?->notes,
             'performedBy' => $latestTask?->performedBy?->name,
             'collectedAt' => $latestTask?->started_at,
@@ -117,6 +145,19 @@ class DiagnosticLabResultPrintService
         ];
     }
 
+    /**
+     * Long free-text values (findings, impression) read better as paragraphs than as
+     * table cells on imaging and pathology reports.
+     *
+     * @param  array{label: string, value: string, reference: ?string}  $row
+     */
+    protected function isNarrativeRow(array $row): bool
+    {
+        $value = (string) ($row['value'] ?? '');
+
+        return ! empty($row['is_text']) || str_contains($value, "\n") || mb_strlen($value) > 60;
+    }
+
     protected function resolveResultRows(DiagnosticFulfillment $fulfillment): Collection
     {
         $fulfillment->loadMissing(['latestReportVersion.observations', 'requestItem']);
@@ -128,6 +169,7 @@ class DiagnosticLabResultPrintService
                 'label' => $observation->display ?? ucfirst(str_replace('_', ' ', $observation->code)),
                 'value' => $this->formatObservationValue($observation),
                 'reference' => $this->formatReferenceRange($observation),
+                'is_text' => $observation->value_numeric === null && filled($observation->value_text),
             ]);
         }
 
@@ -143,6 +185,7 @@ class DiagnosticLabResultPrintService
                     'label' => $entry['label'] ?? (is_string($key) ? ucfirst(str_replace('_', ' ', $key)) : 'Result'),
                     'value' => $entry['value'] ?? '',
                     'reference' => $entry['reference'] ?? null,
+                    'is_text' => in_array($entry['type'] ?? null, ['text', 'long_text'], true),
                 ];
             }
 

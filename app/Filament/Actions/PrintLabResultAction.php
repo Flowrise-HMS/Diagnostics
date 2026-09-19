@@ -17,7 +17,7 @@ class PrintLabResultAction
         $printService = app(DiagnosticLabResultPrintService::class);
 
         return Action::make('printLabResult')
-            ->label('Print Lab Result')
+            ->label('Print result')
             ->icon('heroicon-o-printer')
             ->color('gray')
             ->url(function (?DiagnosticFulfillment $record = null) use ($resolveRecord): string {

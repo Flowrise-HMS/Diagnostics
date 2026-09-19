@@ -152,6 +152,10 @@ class DiagnosticFulfillmentsTable
         }
 
         return [
+            // Recording results is the everyday job on this queue, so it stays a visible button.
+            RecordStructuredResultsAction::make()
+                ->button()
+                ->size('sm'),
             ActionGroup::make([
                 ...self::workflowActions(),
                 ...self::readOnlyActions(),
@@ -321,7 +325,6 @@ class DiagnosticFulfillmentsTable
                         ->success()
                         ->send();
                 }),
-            RecordStructuredResultsAction::make(),
         ];
     }
 }

@@ -3,6 +3,7 @@
 namespace Modules\Diagnostics\Filament\Clusters\Diagnostics\Resources\DiagnosticFulfillments\Schemas;
 
 use Filament\Infolists\Components\IconEntry;
+use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -126,8 +127,18 @@ class DiagnosticFulfillmentInfolist
                             ]),
                     ]),
 
+                Section::make('Findings / Report')
+                    ->visible(fn (DiagnosticFulfillment $record): bool => filled($record->latestReportVersion?->conclusion))
+                    ->schema([
+                        TextEntry::make('latestReportVersion.conclusion')
+                            ->hiddenLabel()
+                            ->formatStateUsing(fn (?string $state): string => nl2br(e((string) $state)))
+                            ->html()
+                            ->columnSpanFull(),
+                    ]),
+
                 Section::make('Result Files')
-                    ->description('Files uploaded with the result.')
+                    ->description('Files uploaded with the result. Images and PDFs open in a new tab.')
                     ->visible(fn (DiagnosticFulfillment $record): bool => $record->resultFiles()->exists())
                     ->schema([
                         RepeatableEntry::make('resultFiles')
@@ -138,15 +149,29 @@ class DiagnosticFulfillmentInfolist
                                 ->get())
                             ->columns(4)
                             ->schema([
+                                ImageEntry::make('preview')
+                                    ->hiddenLabel()
+                                    ->state(fn (DiagnosticResultFile $record): ?string => $record->isImage() ? $record->inlineUrl() : null)
+                                    ->visible(fn (DiagnosticResultFile $record): bool => $record->isImage())
+                                    ->alt(fn (DiagnosticResultFile $record): string => $record->file_name)
+                                    ->height(180)
+                                    ->url(fn (DiagnosticResultFile $record): ?string => $record->inlineUrl())
+                                    ->openUrlInNewTab()
+                                    ->columnSpanFull(),
                                 TextEntry::make('file_name')
                                     ->label('File')
                                     ->icon('heroicon-m-arrow-down-tray')
                                     ->color('primary')
                                     ->url(fn (DiagnosticResultFile $record): ?string => $record->downloadUrl())
                                     ->openUrlInNewTab(),
-                                TextEntry::make('file_type')
-                                    ->label('Type')
-                                    ->placeholder('-'),
+                                TextEntry::make('open')
+                                    ->label('View')
+                                    ->state(fn (DiagnosticResultFile $record): string => $record->isPdf() ? 'Open PDF' : 'Open image')
+                                    ->icon('heroicon-m-arrow-top-right-on-square')
+                                    ->color('primary')
+                                    ->visible(fn (DiagnosticResultFile $record): bool => $record->canOpenInline())
+                                    ->url(fn (DiagnosticResultFile $record): ?string => $record->inlineUrl())
+                                    ->openUrlInNewTab(),
                                 TextEntry::make('file_size')
                                     ->label('Size')
                                     ->formatStateUsing(fn (?int $state): string => $state ? Number::fileSize($state) : '-'),

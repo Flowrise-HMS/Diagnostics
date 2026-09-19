@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Lab Result — {{ $subject['name'] ?? 'Report' }}</title>
+    <title>{{ $reportTitle }} — {{ $subject['name'] ?? 'Report' }}</title>
     <style>
         :root {
             color-scheme: light;
@@ -113,6 +113,21 @@
             color: #374151;
         }
 
+        .notes {
+            margin-top: 16px;
+        }
+
+        .narrative p {
+            margin: 4px 0 0;
+            white-space: normal;
+            line-height: 1.5;
+        }
+
+        ul.files {
+            margin: 4px 0 0;
+            padding-left: 18px;
+        }
+
         .footer {
             margin-top: 32px;
             padding-top: 16px;
@@ -164,7 +179,7 @@
             </div>
         </header>
 
-        <h1 class="report-title">Laboratory Result Report</h1>
+        <h1 class="report-title">{{ $reportTitle }}</h1>
 
         <div class="grid">
             <div>
@@ -213,6 +228,7 @@
             @endif
         </div>
 
+        @if ($resultRows->isNotEmpty())
         <table class="results">
             <thead>
                 <tr>
@@ -235,6 +251,32 @@
                 @endforeach
             </tbody>
         </table>
+        @endif
+
+        @foreach ($narrativeRows as $row)
+            <div class="notes narrative">
+                <span class="label">{{ $row['label'] }}</span>
+                <p>{!! nl2br(e($row['value'])) !!}</p>
+            </div>
+        @endforeach
+
+        @if (! empty($conclusion))
+            <div class="notes narrative">
+                <span class="label">{{ $narrativeRows->isEmpty() && $resultRows->isEmpty() ? 'Findings' : 'Conclusion' }}</span>
+                <p>{!! nl2br(e($conclusion)) !!}</p>
+            </div>
+        @endif
+
+        @if ($files->isNotEmpty())
+            <div class="notes">
+                <span class="label">Attached files</span>
+                <ul class="files">
+                    @foreach ($files as $file)
+                        <li>{{ $file->file_name }}@if ($file->file_size) ({{ \Illuminate\Support\Number::fileSize($file->file_size) }})@endif — {{ $file->created_at?->format('Y-m-d H:i') }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
         @if (! empty($notes))
             <div class="notes">
@@ -256,7 +298,7 @@
                 </div>
             @endif
             <div style="margin-top: 16px; font-size: 0.75rem; color: #6b7280;">
-                This report is generated from the facility laboratory information system. For clinical interpretation, consult a qualified healthcare provider.
+                This report is generated from the facility diagnostics system. For clinical interpretation, consult a qualified healthcare provider.
             </div>
         </div>
     </div>

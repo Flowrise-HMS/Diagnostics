@@ -5,15 +5,17 @@ namespace Modules\Diagnostics\Tests\Feature;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Modules\Clinical\Models\RequestItem;
 use Modules\Clinical\Models\ServiceRequest;
 use Modules\Core\Models\Branch;
 use Modules\Core\Models\Service;
+use Modules\Diagnostics\Classes\Services\DiagnosticCatalogService;
 use Modules\Diagnostics\Classes\Services\DiagnosticLabResultPrintService;
 use Modules\Diagnostics\Classes\Services\DiagnosticResultService;
 use Modules\Diagnostics\Filament\Actions\PrintLabResultAction;
 use Modules\Diagnostics\Models\DiagnosticFulfillment;
-use Modules\Diagnostics\Models\DiagnosticServiceProfile;
 use Modules\Patient\Models\Patient;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
@@ -34,8 +36,7 @@ class DiagnosticLabResultPrintTest extends TestCase
         $user = $this->createUserWithViewPermission();
         $service = Service::factory()->create(['name' => 'Full Blood Count']);
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
@@ -74,8 +75,7 @@ class DiagnosticLabResultPrintTest extends TestCase
         $user = $this->createUserWithViewPermission();
         $service = Service::factory()->create(['name' => 'Malaria RDT']);
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
@@ -113,8 +113,7 @@ class DiagnosticLabResultPrintTest extends TestCase
         $service = Service::factory()->create();
         $item = RequestItem::factory()->forService($service)->create();
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
@@ -128,7 +127,7 @@ class DiagnosticLabResultPrintTest extends TestCase
             ->assertNotFound();
     }
 
-    public function test_print_service_rejects_non_lab_discipline(): void
+    public function test_print_service_rejects_a_completed_fulfillment_with_nothing_to_show(): void
     {
         $service = Service::factory()->create();
         $item = RequestItem::factory()->forService($service)->create();
@@ -141,6 +140,72 @@ class DiagnosticLabResultPrintTest extends TestCase
         ]);
 
         $this->assertFalse(app(DiagnosticLabResultPrintService::class)->canPrint($fulfillment));
+    }
+
+    public function test_radiology_report_prints_findings_and_attached_files(): void
+    {
+        $user = $this->createUserWithViewPermission();
+        $service = Service::factory()->create(['name' => 'Chest X-Ray']);
+        $this->diagnosticProfileFor($service, ['discipline' => 'radiology', 'is_active' => true]);
+
+        $patient = Patient::factory()->create(['branch_id' => Branch::factory()->create()->id]);
+        $request = ServiceRequest::factory()->forPatient($patient)->create();
+        $item = RequestItem::factory()->forRequest($request)->forService($service)->create();
+
+        Storage::fake(config('diagnostics.result_files.disk'));
+
+        app(DiagnosticResultService::class)->submit($item, [
+            'report_conclusion' => "Lungs are clear.\nNo pleural effusion.",
+            'result_files' => [UploadedFile::fake()->image('chest-pa.jpg')],
+        ], $user);
+
+        $fulfillment = DiagnosticFulfillment::query()->where('request_item_id', $item->id)->firstOrFail();
+
+        $this->assertTrue(app(DiagnosticLabResultPrintService::class)->canPrint($fulfillment));
+
+        $response = $this->actingAs($user)
+            ->get(route('diagnostics.fulfillments.lab-result.print', $fulfillment));
+
+        $response->assertOk();
+        $response->assertSee('Radiology Report');
+        $response->assertSee('Lungs are clear.');
+        $response->assertSee('No pleural effusion.');
+        $response->assertSee('Attached files');
+        $response->assertSee('chest-pa.jpg');
+        $response->assertDontSee('Test / Analyte');
+    }
+
+    public function test_pathology_report_prints_narrative_fields_as_paragraphs(): void
+    {
+        $user = $this->createUserWithViewPermission();
+        $service = Service::factory()->create(['name' => 'Histopathology']);
+        $profile = $this->diagnosticProfileFor($service, ['discipline' => 'pathology', 'is_active' => true]);
+
+        app(DiagnosticCatalogService::class)->syncResultFields($profile, [
+            ['label' => 'Gross Description', 'field_key' => 'gross_description', 'value_type' => 'long_text'],
+            ['label' => 'Diagnosis', 'field_key' => 'diagnosis', 'value_type' => 'long_text'],
+        ]);
+
+        $patient = Patient::factory()->create(['branch_id' => Branch::factory()->create()->id]);
+        $request = ServiceRequest::factory()->forPatient($patient)->create();
+        $item = RequestItem::factory()->forRequest($request)->forService($service)->create();
+
+        app(DiagnosticResultService::class)->submit($item, [
+            'field_gross_description' => 'Tan-brown tissue fragment measuring 1.2 cm, firm on sectioning.',
+            'field_diagnosis' => 'Benign fibroadenoma.',
+        ], $user);
+
+        $fulfillment = DiagnosticFulfillment::query()->where('request_item_id', $item->id)->firstOrFail();
+
+        $response = $this->actingAs($user)
+            ->get(route('diagnostics.fulfillments.lab-result.print', $fulfillment));
+
+        $response->assertOk();
+        $response->assertSee('Pathology Report');
+        $response->assertSee('Gross Description');
+        $response->assertSee('Tan-brown tissue fragment');
+        $response->assertSee('Benign fibroadenoma.');
+        $response->assertSee('Conclusion');
     }
 
     public function test_print_action_is_visible_on_table_row_for_authorized_user(): void
@@ -177,8 +242,7 @@ class DiagnosticLabResultPrintTest extends TestCase
         $service = Service::factory()->create();
         $item = RequestItem::factory()->forService($service)->create();
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);
@@ -284,8 +348,7 @@ class DiagnosticLabResultPrintTest extends TestCase
         $user = $this->createUserWithViewPermission();
         $service = Service::factory()->create(['name' => $serviceName]);
 
-        DiagnosticServiceProfile::create([
-            'service_id' => $service->id,
+        $this->diagnosticProfileFor($service, [
             'discipline' => 'lab',
             'is_active' => true,
         ]);

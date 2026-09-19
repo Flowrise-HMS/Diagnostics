@@ -12,7 +12,11 @@ use Modules\Diagnostics\Database\Factories\DiagnosticResultFileFactory;
 use Modules\Diagnostics\Enums\FileSourceType;
 
 /**
+ * @property string|null $file_name
  * @property string|null $file_path
+ * @property string|null $file_type
+ * @property string|null $mime_type
+ * @property int|null $file_size
  *
  * @method static static create(array<string, mixed> $attributes = [])
  */
@@ -72,12 +76,41 @@ class DiagnosticResultFile extends BaseModel
      */
     public function downloadUrl(): ?string
     {
+        return $this->signedUrl('diagnostics.result-files.download');
+    }
+
+    /**
+     * Signed link that opens the file in the browser (images, PDFs).
+     */
+    public function inlineUrl(): ?string
+    {
+        return $this->signedUrl('diagnostics.result-files.inline');
+    }
+
+    public function isImage(): bool
+    {
+        return str_starts_with((string) $this->mime_type, 'image/')
+            || in_array(strtolower((string) $this->file_type), ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'], true);
+    }
+
+    public function isPdf(): bool
+    {
+        return $this->mime_type === 'application/pdf' || strtolower((string) $this->file_type) === 'pdf';
+    }
+
+    public function canOpenInline(): bool
+    {
+        return $this->isImage() || $this->isPdf();
+    }
+
+    protected function signedUrl(string $routeName): ?string
+    {
         if (blank($this->file_path)) {
             return null;
         }
 
         return URL::temporarySignedRoute(
-            'diagnostics.result-files.download',
+            $routeName,
             now()->addMinutes((int) config('diagnostics.result_files.link_ttl_minutes', 5)),
             ['resultFile' => $this->getKey()],
         );
