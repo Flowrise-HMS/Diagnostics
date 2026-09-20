@@ -19,10 +19,12 @@ What is available:
 - Clinical-to-Diagnostics bridge from `RequestItem` with accession numbers, priority, and discipline stubs
 - full in-scope schema: profiles, panels, reference ranges, fulfillments, specimens, observations, components, reports, files, studies, media, allocations
 - structured observation persistence via `DiagnosticObservationWriter` linked to report versions
-- Filament operations: fulfillment worklist, relation managers, discipline-aware actions, structured result entry, lab result printing
-- Clinical workspace template-driven lab result entry via `FulfillmentService`
-- catalog admin: panels and reference ranges under service profiles; aligned template fields
+- Filament operations: fulfillment worklist, relation managers, discipline-aware actions, file-first structured result entry, result printing for every discipline, inline preview of result files
+- Clinical workspace lab tabs (Pending Labs, Submit Results, Completed) and Pending Diagnostics / Completed Results widgets via `FulfillmentService`
+- catalog admin: one **Diagnostic Service** per catalog service (auto-created for LAB / RAD / PAT / DIA categories) with result fields and field-scoped reference ranges; `Sync from service catalog` action and `diagnostics:sync-profiles` command
 - starter seed data for common lab, radiology, and pathology services
+
+Verified against code on 2026-09-20.
 
 Explicitly deferred (global interoperability — last across all modules):
 
@@ -113,15 +115,12 @@ Today, all three result modes are supported in production: structured values per
 
 ## Filament UI Model (Hub, Not One Resource Per Table)
 
-Diagnostics intentionally exposes **three sidebar resources**, not one per database table. Child entities are managed in context via relation managers, matching the Core/Billing pattern (few resources, deep nesting).
+Diagnostics intentionally exposes **two sidebar resources**, not one per database table. Child entities are managed in context via relation managers, matching the Core/Billing pattern (few resources, deep nesting). The cluster lives in the **Patient Care** sidebar group as **Diagnostics** (`/diagnostics-cluster`) and is unregistered entirely when the Core feature toggle **Diagnostics** is off.
 
 ```text
-DiagnosticServiceProfile (catalog)
-  ├── Panel Items relation manager      → diagnostic_panel_items (+ diagnostic_panels)
-  └── Reference Ranges relation manager → diagnostic_reference_ranges
-
-DiagnosticResultTemplate (catalog)
-  └── Template fields on form           → diagnostic_result_template_fields
+DiagnosticServiceProfile ("Diagnostic Services", catalog)
+  ├── Result fields repeater on the form   → diagnostic_result_template_fields (one hidden default template per profile)
+  └── Reference Ranges relation manager    → diagnostic_reference_ranges (scoped per result field)
 
 DiagnosticFulfillment (operations worklist)
   ├── Specimens (+ containers, processing events)
@@ -133,19 +132,17 @@ DiagnosticFulfillment (operations worklist)
   └── Result Files
 ```
 
-There is **no** standalone Filament resource for panels, observations, specimens, or studies. Those records are always edited on a profile or fulfillment.
+The former `DiagnosticResultTemplateResource` and the Panel Items relation manager were removed on 2026-09-19: templates and panels still exist as tables (`diagnostic_result_templates`, `diagnostic_panels`, `diagnostic_panel_items`) but are not edited through the UI any more: the result-fields repeater maintains the profile's default template, and panels/panel items remain as data structures without a maintenance screen. There is **no** standalone Filament resource for templates, panels, observations, specimens, or studies.
 
 ## Current Filament Surface
 
-The Diagnostics Filament cluster centers on three resources:
-
 ### 1. `DiagnosticFulfillment`
 
-Operational worklist (`canCreate()` is false — fulfillments come from Clinical orders).
+Operational worklist (`canCreate()` is false — fulfillments come from Clinical orders; pages list / view / edit / activities).
 
-**Table:** request, service, patient/guest, accession, priority, scheduled_at, discipline, status, critical flag, counts.
+**Table:** Request, Service, Client, Accession, Priority, Scheduled, Discipline, Status, Critical, Specimens, Reports, Files, Created. Filters: Status, Discipline, **Critical results only**, result date From / Until. Navigation label **Diagnostic Fulfillments**.
 
-**Workflow actions** (policy-gated, discipline-aware): schedule, collect specimen, start processing, finalize result, verify result, sign report, amend report, **Record Structured Results**, **Print Lab Result**.
+**Workflow actions** (policy-gated, discipline-aware): Schedule, Collect Specimen, Start Processing, Finalize Result, Verify Result, Sign Report, Amend Report, **Record results** (`RecordStructuredResultsAction`, file-first entry form available while the fulfillment is pending/scheduled/collected/in progress), **Print result** (`PrintLabResultAction`, any discipline once completed with result rows, a report conclusion or result files).
 
 **Relation managers:**
 
@@ -153,30 +150,27 @@ Operational worklist (`canCreate()` is false — fulfillments come from Clinical
 |---------|----------------|
 | Specimens | `DiagnosticSpecimen`, containers, processing events |
 | Observations | `DiagnosticObservation` |
-| Studies | `DiagnosticStudy` |
-| Media | `DiagnosticMedia` (through study) |
-| Allocations | `DiagnosticFulfillmentAllocation` |
+| Studies (radiology only) | `DiagnosticStudy` |
+| Media ("Study Media", radiology only) | `DiagnosticMedia` (through study) |
+| Allocations (radiology only) | `DiagnosticFulfillmentAllocation` |
 | Report Versions | `DiagnosticReportVersion` (+ signatures via workflow) |
-| Result Files | `DiagnosticResultFile` |
+| Result Files | `DiagnosticResultFile` (upload, inline **open** preview and **download** through signed URLs) |
 
-### 2. `DiagnosticServiceProfile`
+### 2. `DiagnosticServiceProfile` ("Diagnostic Services")
 
-Catalog extension linking a Core `Service` to diagnostic behavior.
+Catalog extension linking a Core `Service` to diagnostic behavior. Profiles are created automatically for services in the LAB / RAD / PAT / DIA categories (observer) and by the list action **Sync from service catalog** or `php artisan diagnostics:sync-profiles`.
 
-**Fields:** discipline, LOINC, default specimen type, auto-verify, turnaround time, modality, preparation instructions.
+**Fields:** Catalog service, discipline, Default specimen, Modality, Turnaround (minutes), Auto-verify normal results, Patient preparation, Active; **Result fields** repeater (Label, Key, Type numeric / text / long_text / select, Units, Normal low / high, Choices, Required, optional LOINC code); **Coding** (LOINC code / display). Navigation label **Diagnostic Services**, create button **New Diagnostic Service**.
 
-**Relation managers:**
+**Relation manager:** Reference ranges by sex and age (`DiagnosticReferenceRange`: result field, sex, age from/to in months, normal low/high, critical low/high, range text).
 
-| Manager | Models touched |
-|---------|----------------|
-| Panel Items | `DiagnosticPanelItem` (panel auto-created via `ensurePanel()`) |
-| Reference Ranges | `DiagnosticReferenceRange` (age/gender bands, critical limits) |
+### 3. Settings page
 
-Record titles use the linked service name and discipline label (not the raw enum).
+`ManageDiagnosticsSettings` ("Diagnostics", Settings group, permission `manage_diagnostics_settings`): default report status, **Auto-create fulfillment from clinical requests** (the only value read at runtime, by `CreateDiagnosticFulfillmentFromRequestItem`), workspace entry toggle (stored only).
 
-### 3. `DiagnosticResultTemplate`
+### 4. Clinical workspace widgets
 
-Template definitions with spec-aligned fields: `observation_code`, `default_units`, `is_required`, optional template reference ranges.
+`PendingDiagnosticFulfillmentsWidget` ("Pending Diagnostics") and `CompletedDiagnosticResultsWidget` ("Completed Results") are pushed into the Clinical Workspace through Core's `PageWidgetsRegistry`; the lab role's Pending Labs / Submit Results / Completed tabs use Clinical's `FulfillmentService`.
 
 ## Core Services (Non-Filament)
 
@@ -349,7 +343,6 @@ Diagnostics uses both:
 - `verify_diagnostic_result`
 - `sign_diagnostic_report`
 - `amend_diagnostic_report`
-- `manage_diagnostic_panels`
 - `manage_diagnostic_reference_ranges`
 - `record_structured_diagnostic_observations`
 - `manage_diagnostic_allocations`
@@ -378,7 +371,7 @@ Before staff can use Diagnostics effectively, an administrator should confirm:
 - Diagnostics migrations have run
 - Diagnostics seeders have run
 - users have the right roles and permissions
-- diagnostic service profiles and templates are reviewed after starter seeding
+- diagnostic services (profiles) and their result fields are reviewed after starter seeding
 
 ### Recommended setup order
 
@@ -388,7 +381,7 @@ Before staff can use Diagnostics effectively, an administrator should confirm:
 3. Run Diagnostics seeders
 4. Review starter services and prices
 5. Review diagnostic service profiles
-6. Review and edit default templates
+6. Review and edit the result fields and reference ranges of each diagnostic service
 7. Assign roles and permissions
 8. Train staff on the fulfillment worklist
 ```
@@ -398,7 +391,8 @@ Before staff can use Diagnostics effectively, an administrator should confirm:
 ```bash
 php artisan module:migrate Diagnostics
 php artisan db:seed --class="Modules\\Diagnostics\\Database\\Seeders\\DiagnosticsDatabaseSeeder"
-php artisan test Modules/Diagnostics/tests
+php artisan diagnostics:sync-profiles      # create profiles for lab/radiology/pathology services that lack one
+php artisan test --compact Modules/Diagnostics/tests
 ```
 
 ### Admin responsibilities after seeding
@@ -409,7 +403,7 @@ Admins should still review:
 
 - local pricing
 - service activation/deactivation
-- which templates should remain default
+- the result fields and reference ranges of each diagnostic service
 - whether additional local-only diagnostic services are needed
 - which roles should verify, sign, or amend reports
 
@@ -467,21 +461,24 @@ These listeners are what keep the shared Clinical ordering backbone connected to
 
 ### Filament resource layout
 
-Three resource roots under `Modules/Diagnostics/app/Filament/Clusters/Diagnostics/Resources/`:
+Two resource roots under `Modules/Diagnostics/app/Filament/Clusters/Diagnostics/Resources/`:
 
 - `DiagnosticFulfillments` — seven relation managers (see **Filament UI Model** above)
-- `DiagnosticServiceProfiles` — panel items + reference ranges relation managers
-- `DiagnosticResultTemplates`
+- `DiagnosticServiceProfiles` — result fields on the form + reference ranges relation manager
+
+Plus `Pages/ManageDiagnosticsSettings`, `Actions/RecordStructuredResultsAction`, `Actions/PrintLabResultAction`, `Schemas/DiagnosticResultEntryForm`, and the two workspace widgets under `app/Filament/Widgets/`.
 
 ### Tests
 
-The module test suite (`Modules/Diagnostics/tests`) currently includes 78 tests covering domain contracts, schema, observation persistence, discipline workflows, migration rollback, lab result printing, permissions, and starter catalog seeding.
+The module test suite (`Modules/Diagnostics/tests`, 28 test files) covers domain contracts, schema, observation persistence, discipline workflows, migration rollback, result printing and inline file preview, permissions, catalog sync and starter catalog seeding.
 
 Run the module tests with:
 
 ```bash
-php artisan test Modules/Diagnostics/tests
+php artisan test --compact Modules/Diagnostics/tests
 ```
+
+Routes: `GET /diagnostics/fulfillments/{fulfillment}/lab-result/print` (auth), signed `GET /diagnostics/result-files/{resultFile}/download` and `/inline` (links expire after 5 minutes). Result files are stored on the disk set by `DIAGNOSTICS_RESULT_FILES_DISK` (default `local`).
 
 ### Metadata and package files
 
@@ -512,7 +509,8 @@ This is the central mental model to preserve whenever the module evolves.
 
 **Implemented but without standalone Filament resources:**
 
-- `DiagnosticPanel` — managed via Panel Items relation manager on service profiles
+- `DiagnosticResultTemplate` / `DiagnosticResultTemplateField` — one hidden default template per service profile, edited through the Result fields repeater
+- `DiagnosticPanel` / `DiagnosticPanelItem` — maintained by `DiagnosticCatalogService`; no admin tab
 - `DiagnosticObservationComponent` — schema/factory only; composite values stored on parent observations
 - `DiagnosticReportSignature` — created via sign-report workflow, not a separate admin tab
 
@@ -543,5 +541,5 @@ If you remember only five things about this module, remember these:
 1. Diagnostics extends Clinical ordering; it does not replace it.
 2. `DiagnosticFulfillment` is the operational center of gravity.
 3. Files are a first-class result mode, not a fallback.
-4. Templates exist to speed up staff work, not to burden it.
+4. Result fields (the per-service template) exist to speed up staff work, not to burden it.
 5. The module is designed to stay practical for small clinics while still leaving room to grow.
