@@ -81,23 +81,31 @@ class DiagnosticsServiceProvider extends ModuleServiceProvider
         $patientProfile = 'Modules\\Clinical\\Filament\\Clusters\\Workspace\\Pages\\PatientProfile';
         $timeline = 'Modules\\Clinical\\Filament\\Clusters\\Workspace\\Pages\\Timeline';
 
-        $completedResultsClassFactory = function (Page $page): array {
+        // Evaluated per request so the "Enable diagnostics workspace entry"
+        // setting takes effect without a reboot.
+        $workspaceEntryEnabled = static fn (): bool => app_settings()->diagnosticsWorkspaceEntryEnabled();
+
+        $completedResultsClassFactory = function (Page $page) use ($workspaceEntryEnabled): array {
+            if (! $workspaceEntryEnabled()) {
+                return [];
+            }
+
             $widget = OptionalClass::whenCanView(CompletedDiagnosticResultsWidget::class, 'Diagnostics');
 
             return $widget ? [$widget] : [];
         };
 
-        $completedFooterFactory = function (Page $page): array {
-            return $this->makePatientScopedWidgets($page, [
+        $completedFooterFactory = function (Page $page) use ($workspaceEntryEnabled): array {
+            return $workspaceEntryEnabled() ? $this->makePatientScopedWidgets($page, [
                 CompletedDiagnosticResultsWidget::class,
-            ]);
+            ]) : [];
         };
 
-        $patientProfileFooterFactory = function (Page $page): array {
-            return $this->makePatientScopedWidgets($page, [
+        $patientProfileFooterFactory = function (Page $page) use ($workspaceEntryEnabled): array {
+            return $workspaceEntryEnabled() ? $this->makePatientScopedWidgets($page, [
                 PendingDiagnosticFulfillmentsWidget::class,
                 CompletedDiagnosticResultsWidget::class,
-            ]);
+            ]) : [];
         };
 
         foreach ([$clinicalWorkspace, $patientProfile, $timeline] as $pageClass) {

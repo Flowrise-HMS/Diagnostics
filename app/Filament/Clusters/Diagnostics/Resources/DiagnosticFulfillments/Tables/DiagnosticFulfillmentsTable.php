@@ -260,7 +260,7 @@ class DiagnosticFulfillmentsTable
                 ->schema([
                     Select::make('report_status')
                         ->options(ReportVersionStatus::class)
-                        ->default(ReportVersionStatus::FINAL)
+                        ->default(fn (): string => app_settings()->diagnosticsDefaultReportStatus())
                         ->required(),
                 ])
                 ->action(function (DiagnosticFulfillment $record, array $data): void {

@@ -11,6 +11,8 @@ use Modules\Clinical\Models\RequestItem;
 use Modules\Clinical\Models\ServiceRequest;
 use Modules\Core\Models\Branch;
 use Modules\Core\Models\Service;
+use Modules\Core\Settings\BrandingSettings;
+use Modules\Core\Settings\NumberingSettings;
 use Modules\Diagnostics\Classes\Services\DiagnosticCatalogService;
 use Modules\Diagnostics\Classes\Services\DiagnosticLabResultPrintService;
 use Modules\Diagnostics\Classes\Services\DiagnosticResultService;
@@ -33,6 +35,8 @@ class DiagnosticLabResultPrintTest extends TestCase
 
     public function test_patient_lab_result_print_page_renders_completed_results(): void
     {
+        NumberingSettings::fake(['pdf_date_format' => 'd/m/Y']);
+        BrandingSettings::fake(['pdf_footer_text' => 'Printed on request']);
         $user = $this->createUserWithViewPermission();
         $service = Service::factory()->create(['name' => 'Full Blood Count']);
 
@@ -68,6 +72,8 @@ class DiagnosticLabResultPrintTest extends TestCase
         $response->assertSee('Hemoglobin');
         $response->assertSee('13.5 g/dL');
         $response->assertSee('Within normal limits');
+        $response->assertSee('Printed on request');
+        $response->assertSee(now()->format('d/m/Y'));
     }
 
     public function test_guest_lab_result_print_page_renders_guest_identity(): void

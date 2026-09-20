@@ -68,7 +68,7 @@ class DiagnosticResultService
             $fulfillment->startProcessing();
 
             $reportVersion = $fulfillment->finalizeResult(
-                $data['report_status'] ?? 'final',
+                $data['report_status'] ?? app_settings()->diagnosticsDefaultReportStatus(),
                 $this->buildReportVersionAttributes($fulfillment->discipline, $data, $user),
             );
 

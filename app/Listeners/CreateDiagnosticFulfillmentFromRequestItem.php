@@ -53,7 +53,7 @@ class CreateDiagnosticFulfillmentFromRequestItem
                     'discipline' => $profile->discipline,
                     'status' => FulfillmentStatus::PENDING,
                     'accession_number' => $this->numberGenerator->generateAccessionNumber((string) $serviceRequest->branch_id),
-                    'priority' => $serviceRequest->priority?->value ?? 'routine',
+                    'priority' => enum_value($serviceRequest->priority) ?? 'routine',
                     'clinical_indication' => $this->resolveClinicalIndication($serviceRequest),
                 ]
             );

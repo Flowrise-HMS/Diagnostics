@@ -210,8 +210,9 @@ class DiagnosticFulfillment extends BaseModel
         ]);
     }
 
-    public function finalizeResult(string $reportStatus = 'final', array $attributes = []): DiagnosticReportVersion
+    public function finalizeResult(?string $reportStatus = null, array $attributes = []): DiagnosticReportVersion
     {
+        $reportStatus ??= app_settings()->diagnosticsDefaultReportStatus();
         $latestVersion = $this->latestReportVersion;
         $versionNumber = $latestVersion?->version ? $latestVersion->version + 1 : 1;
 

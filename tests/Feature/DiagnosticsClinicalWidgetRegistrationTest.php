@@ -8,6 +8,7 @@ use Modules\Core\Support\ModuleAvailability;
 use Modules\Diagnostics\Filament\Widgets\CompletedDiagnosticResultsWidget;
 use Modules\Diagnostics\Filament\Widgets\PendingDiagnosticFulfillmentsWidget;
 use Modules\Diagnostics\Providers\DiagnosticsServiceProvider;
+use Modules\Diagnostics\Settings\DiagnosticsSettings;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -39,6 +40,26 @@ class DiagnosticsClinicalWidgetRegistrationTest extends TestCase
             CompletedDiagnosticResultsWidget::class,
             $registry->for($timeline, 'completed_results', $page),
         );
+    }
+
+    #[Test]
+    public function it_hides_the_workspace_widgets_when_workspace_entry_is_disabled(): void
+    {
+        if (! ModuleAvailability::diagnosticsEnabled() || ! ModuleAvailability::clinicalEnabled()) {
+            $this->markTestSkipped('Diagnostics and Clinical modules must be enabled.');
+        }
+
+        DiagnosticsSettings::fake(['workspace_entry_enabled' => false]);
+
+        $registry = app(PageWidgetsRegistry::class);
+        $page = $this->createStub(Page::class);
+        $clinicalWorkspace = 'Modules\\Clinical\\Filament\\Clusters\\Workspace\\Pages\\ClinicalWorkspace';
+
+        $this->assertNotContains(
+            CompletedDiagnosticResultsWidget::class,
+            $registry->for($clinicalWorkspace, 'completed_results', $page),
+        );
+        $this->assertSame([], $registry->for($clinicalWorkspace, 'footer', $page));
     }
 
     #[Test]

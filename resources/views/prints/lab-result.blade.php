@@ -175,7 +175,7 @@
                 @if ($reportVersion)
                     <div><strong>Report v{{ $reportVersion }}</strong> ({{ ucfirst(is_string($reportStatus) ? $reportStatus : ($reportStatus?->value ?? 'final')) }})</div>
                 @endif
-                <div><strong>Printed:</strong> {{ now()->format('Y-m-d H:i') }}</div>
+                <div><strong>Printed:</strong> {{ pdf_date(now()) }}</div>
             </div>
         </header>
 
@@ -217,13 +217,13 @@
             @if ($collectedAt)
                 <div>
                     <span class="label">Collected</span>
-                    <span>{{ $collectedAt->format('Y-m-d H:i') }}</span>
+                    <span>{{ pdf_date($collectedAt) }}</span>
                 </div>
             @endif
             @if ($reportedAt)
                 <div>
                     <span class="label">Reported</span>
-                    <span>{{ $reportedAt->format('Y-m-d H:i') }}</span>
+                    <span>{{ pdf_date($reportedAt) }}</span>
                 </div>
             @endif
         </div>
@@ -293,12 +293,15 @@
                 <div style="margin-top: 12px;">
                     <span class="label">Signatures</span>
                     @foreach ($signatures as $signature)
-                        <div>{{ $signature->signedBy?->name ?? 'Staff' }}@if ($signature->role) ({{ str_replace('_', ' ', $signature->role) }})@endif — {{ $signature->signed_at?->format('Y-m-d H:i') }}</div>
+                        <div>{{ $signature->signedBy?->name ?? 'Staff' }}@if ($signature->role) ({{ str_replace('_', ' ', $signature->role) }})@endif — {{ pdf_date($signature->signed_at) }}</div>
                     @endforeach
                 </div>
             @endif
             <div style="margin-top: 16px; font-size: 0.75rem; color: #6b7280;">
                 This report is generated from the facility diagnostics system. For clinical interpretation, consult a qualified healthcare provider.
+                @if ($footerText = app_settings()->pdfFooterText())
+                    <br>{{ $footerText }}
+                @endif
             </div>
         </div>
     </div>

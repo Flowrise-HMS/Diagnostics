@@ -24,6 +24,7 @@ use Modules\Diagnostics\Models\DiagnosticResultTemplate;
 use Modules\Diagnostics\Models\DiagnosticResultTemplateField;
 use Modules\Diagnostics\Models\DiagnosticSpecimenContainer;
 use Modules\Diagnostics\Models\DiagnosticStudy;
+use Modules\Diagnostics\Settings\DiagnosticsSettings;
 use Tests\TestCase;
 
 class DisciplineWorkflowTest extends TestCase
@@ -107,6 +108,21 @@ class DisciplineWorkflowTest extends TestCase
 
         $this->assertSame(AbnormalFlag::HIGH, $observation->abnormal_flag);
         $this->assertSame('Above reference range', $observation->interpretation);
+    }
+
+    public function test_submitted_results_use_the_configured_default_report_status(): void
+    {
+        DiagnosticsSettings::fake(['default_report_status' => 'preliminary']);
+        $user = User::factory()->create();
+        $service = Service::factory()->create(['name' => 'Urea']);
+        $item = RequestItem::factory()->forService($service)->create();
+        $this->diagnosticProfileFor($service, ['discipline' => 'lab', 'is_active' => true]);
+
+        $this->resultService->submit($item, ['findings' => 'Preliminary read', 'results' => [['key' => 'urea', 'value' => '5.1']]], $user);
+
+        $fulfillment = DiagnosticFulfillment::query()->where('request_item_id', $item->id)->firstOrFail();
+
+        $this->assertSame(ReportVersionStatus::PRELIMINARY, $fulfillment->latestReportVersion()->first()->status);
     }
 
     public function test_lab_verify_result_sets_verified_metadata(): void

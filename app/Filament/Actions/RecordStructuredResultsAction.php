@@ -46,7 +46,7 @@ class RecordStructuredResultsAction
             ->visible(function (?DiagnosticFulfillment $record = null) use ($resolveRecord): bool {
                 $user = auth()->user();
 
-                if ($user === null) {
+                if ($user === null || ! app_settings()->diagnosticsWorkspaceEntryEnabled()) {
                     return false;
                 }
 
