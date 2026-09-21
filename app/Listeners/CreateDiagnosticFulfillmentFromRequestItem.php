@@ -45,6 +45,10 @@ class CreateDiagnosticFulfillmentFromRequestItem
 
         $serviceRequest = $requestItem->serviceRequest;
 
+        if ($serviceRequest === null) {
+            return;
+        }
+
         DB::transaction(function () use ($requestItem, $profile, $serviceRequest): void {
             $fulfillment = DiagnosticFulfillment::query()->firstOrCreate(
                 ['request_item_id' => $requestItem->id],
